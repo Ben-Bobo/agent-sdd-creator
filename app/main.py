@@ -15,8 +15,10 @@ if shutil.which(_mmdc) is None:
 import json
 from pathlib import Path
 
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile
-from fastapi.responses import FileResponse, PlainTextResponse, StreamingResponse
+from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
+from fastapi.responses import FileResponse, HTMLResponse, StreamingResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 
 from . import session as session_store
@@ -29,6 +31,10 @@ from .technology_fit import generate_report as generate_tech_fit_report
 
 app = FastAPI(title="Automation SDD Builder")
 
+_BASE_DIR = Path(__file__).resolve().parent.parent
+app.mount("/static", StaticFiles(directory=str(_BASE_DIR / "static")), name="static")
+_templates = Jinja2Templates(directory=str(_BASE_DIR / "templates"))
+
 
 class CreateSessionRequest(BaseModel):
     mode: Mode
@@ -39,9 +45,9 @@ class CreateSessionResponse(BaseModel):
     session_id: str
 
 
-@app.get("/", response_class=PlainTextResponse)
-def root() -> str:
-    return "Automation SDD Builder — running"
+@app.get("/", response_class=HTMLResponse)
+def index(request: Request) -> HTMLResponse:
+    return _templates.TemplateResponse(request, "index.html", {})
 
 
 @app.post("/api/session", response_model=CreateSessionResponse)

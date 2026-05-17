@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Automation SDD Builder</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <header>
+    <h1>Automation SDD Builder</h1>
+    <div class="mode-toggle" id="mode-toggle">
+      <button data-mode="sdd_builder" class="active" type="button">SDD Builder</button>
+      <button data-mode="technology_fit" type="button">Technology Fit</button>
+    </div>
+    <button id="new-session-btn" type="button" title="Discard current session and start over">New session</button>
+  </header>
+
+  <main>
+    <section class="input-pane">
+      <div class="style-toggle" id="style-toggle">
+        <button data-style="chat" class="active" type="button">Chat</button>
+        <button data-style="drop_in" type="button">Drop-in</button>
+      </div>
+
+      <div id="dropin-panel" hidden>
+        <p class="hint">Paste a meeting transcript, email thread, or process description — or upload a UTF-8 text file. The tool will extract a structured snapshot and run gap analysis.</p>
+        <textarea id="dropin-text" placeholder="Paste process description here…"></textarea>
+        <label class="file-row">
+          File (optional): <input type="file" id="dropin-file" accept=".txt,.md">
+        </label>
+        <button id="dropin-submit" type="button">Process</button>
+      </div>
+
+      <div id="chat-panel">
+        <form id="intake-form">
+          <h3>Phase 1 — quick intake</h3>
+          <p class="hint">A few quick answers before the chat starts.</p>
+
+          <label>Project name
+            <input name="project_name" required autocomplete="off">
+          </label>
+
+          <label>Business owner / requester
+            <input name="business_owner" autocomplete="off">
+          </label>
+
+          <label>Trigger type
+            <select name="trigger_type">
+              <option value="">(pick one)</option>
+              <option value="scheduled">scheduled</option>
+              <option value="manual">manual</option>
+              <option value="event">event</option>
+              <option value="other">other</option>
+            </select>
+          </label>
+
+          <label>Trigger detail
+            <input name="trigger_detail" placeholder="e.g. new email in shared inbox, daily 8am">
+          </label>
+
+          <label>Frequency / volume
+            <input name="frequency" placeholder="e.g. 70-90 per day, throughout business hours">
+          </label>
+
+          <label>Applications (comma-separated)
+            <input name="applications_rough" placeholder="e.g. Outlook, SAP ECC">
+          </label>
+
+          <label>Business criticality
+            <select name="criticality">
+              <option value="">(pick one)</option>
+              <option value="low">low</option>
+              <option value="medium">medium</option>
+              <option value="high">high</option>
+              <option value="critical">critical</option>
+            </select>
+          </label>
+
+          <button type="submit">Start chat</button>
+        </form>
+
+        <div id="chat-transcript" hidden></div>
+        <form id="chat-input" hidden>
+          <textarea name="message" placeholder="Type your response…" rows="3" required></textarea>
+          <button type="submit">Send</button>
+        </form>
+      </div>
+    </section>
+
+    <section class="status-pane">
+      <div class="phase-indicator">
+        Phase: <span id="phase-label">—</span>
+      </div>
+      <div class="coverage">
+        <div class="coverage-row">
+          <span>Coverage</span>
+          <span id="coverage-pct">—</span>
+        </div>
+        <div class="coverage-bar"><div id="coverage-fill"></div></div>
+      </div>
+      <button id="generate-btn" type="button" disabled>Generate Draft</button>
+      <div id="status-msg"></div>
+      <div id="artifacts" class="artifacts"></div>
+    </section>
+  </main>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

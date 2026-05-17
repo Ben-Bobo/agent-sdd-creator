@@ -1,6 +1,16 @@
+import os
+import shutil
+
 from dotenv import load_dotenv
 
 load_dotenv()
+
+_mmdc = os.environ.get("MERMAID_CLI", "mmdc")
+if shutil.which(_mmdc) is None:
+    raise RuntimeError(
+        f"Mermaid CLI '{_mmdc}' not found on PATH. "
+        "Install with: npm install -g @mermaid-js/mermaid-cli"
+    )
 
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.responses import PlainTextResponse

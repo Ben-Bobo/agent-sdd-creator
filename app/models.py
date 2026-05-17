@@ -100,6 +100,7 @@ class ChatMessage(BaseModel):
 
 class CoverageItem(BaseModel):
     id: str
+    category: str
     status: Literal["covered", "partial", "missing"]
     question: Optional[str] = None
 

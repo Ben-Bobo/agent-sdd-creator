@@ -8,7 +8,8 @@ from pydantic import BaseModel
 
 from . import session as session_store
 from .extraction import extract_from_text
-from .models import Extracted, InputStyle, Mode, Session
+from .gap_analysis import analyze as analyze_gaps
+from .models import Coverage, Extracted, InputStyle, Mode, Session
 
 app = FastAPI(title="Automation SDD Builder")
 
@@ -76,3 +77,19 @@ async def dropin(
     session.extracted = extract_from_text(combined)
     session_store.save_session(session)
     return session.extracted
+
+
+@app.post("/api/coverage/{session_id}", response_model=Coverage)
+def coverage(session_id: str) -> Coverage:
+    try:
+        session = session_store.load_session(session_id)
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="Session not found")
+    if session.extracted is None:
+        raise HTTPException(
+            status_code=400,
+            detail="Run extraction first (POST /api/dropin or chat intake).",
+        )
+    session.coverage = analyze_gaps(session.extracted)
+    session_store.save_session(session)
+    return session.coverage

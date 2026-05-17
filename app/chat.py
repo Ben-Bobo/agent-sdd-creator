@@ -6,11 +6,12 @@ After each user turn we re-extract on (intake + transcript) and re-run gap
 analysis, so the coverage indicator updates in real time. That is intentionally
 expensive — fine for v1, optimize later.
 """
+
 from __future__ import annotations
 
 import os
-from datetime import datetime, timezone
-from typing import AsyncIterator
+from collections.abc import AsyncIterator
+from datetime import UTC, datetime
 
 from . import session as session_store
 from .extraction import extract_from_text
@@ -33,9 +34,17 @@ READY_MESSAGE = (
 )
 
 EXPLICIT_DONE_PHRASES = {
-    "done", "that's it", "thats it", "i'm done", "im done",
-    "no more", "nothing else", "that's all", "thats all",
-    "that covers it", "i think that's it",
+    "done",
+    "that's it",
+    "thats it",
+    "i'm done",
+    "im done",
+    "no more",
+    "nothing else",
+    "that's all",
+    "thats all",
+    "that covers it",
+    "i think that's it",
 }
 
 COVERAGE_AUTO_THRESHOLD = 0.85
@@ -52,22 +61,16 @@ def handle_intake(session: Session, intake_data: Intake) -> None:
         business_criticality=intake_data.criticality,
         schedule_frequency=intake_data.frequency,
         triggers=_format_trigger(intake_data),
-        applications=[
-            Application(name=a) for a in (intake_data.applications_rough or []) if a
-        ],
+        applications=[Application(name=a) for a in (intake_data.applications_rough or []) if a],
     )
     session.phase = "narrative"
-    session.transcript.append(
-        ChatMessage(role="assistant", content=OPENING_PROMPT, ts=_now())
-    )
+    session.transcript.append(ChatMessage(role="assistant", content=OPENING_PROMPT, ts=_now()))
     session_store.save_session(session)
 
 
 async def handle_turn(session: Session, user_message: str) -> AsyncIterator[str]:
     """Process a user turn and yield assistant response chunks (for SSE)."""
-    session.transcript.append(
-        ChatMessage(role="user", content=user_message, ts=_now())
-    )
+    session.transcript.append(ChatMessage(role="user", content=user_message, ts=_now()))
 
     session.extracted = extract_from_text(_build_chat_context(session))
     session.coverage = analyze_gaps(session.extracted)
@@ -90,11 +93,7 @@ async def handle_turn(session: Session, user_message: str) -> AsyncIterator[str]
         for word in _word_chunks(READY_MESSAGE):
             yield word
     elif session.phase == "clarification":
-        system = (
-            load_prompt("system_chat")
-            + "\n\n---\n\n"
-            + load_prompt("clarifier_question")
-        )
+        system = load_prompt("system_chat") + "\n\n---\n\n" + load_prompt("clarifier_question")
         context_body = _build_clarifier_context(session)
         async for chunk in stream(
             system=system,
@@ -106,14 +105,12 @@ async def handle_turn(session: Session, user_message: str) -> AsyncIterator[str]
             yield chunk
         assistant_text = assistant_text.strip()
 
-    session.transcript.append(
-        ChatMessage(role="assistant", content=assistant_text, ts=_now())
-    )
+    session.transcript.append(ChatMessage(role="assistant", content=assistant_text, ts=_now()))
     session_store.save_session(session)
 
 
 def _now() -> str:
-    return datetime.now(timezone.utc).isoformat()
+    return datetime.now(UTC).isoformat()
 
 
 def _is_explicit_done(msg: str) -> bool:
@@ -147,15 +144,11 @@ def _build_chat_context(session: Session) -> str:
         lines.append(f"- Project name: {intake.project_name}")
         lines.append(f"- Business owner: {intake.business_owner}")
         if intake.trigger_type or intake.trigger_detail:
-            lines.append(
-                f"- Trigger: {intake.trigger_type or ''} — {intake.trigger_detail or ''}"
-            )
+            lines.append(f"- Trigger: {intake.trigger_type or ''} — {intake.trigger_detail or ''}")
         if intake.frequency:
             lines.append(f"- Frequency: {intake.frequency}")
         if intake.applications_rough:
-            lines.append(
-                f"- Applications mentioned: {', '.join(intake.applications_rough)}"
-            )
+            lines.append(f"- Applications mentioned: {', '.join(intake.applications_rough)}")
         if intake.criticality:
             lines.append(f"- Business criticality: {intake.criticality}")
         lines.append("")

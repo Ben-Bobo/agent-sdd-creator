@@ -3,11 +3,11 @@
 The script plays the role of the chat user — the doer who knows the process.
 Run uvicorn separately on port 8765 before invoking this script.
 """
+
 from __future__ import annotations
 
 import json
 import sys
-from pathlib import Path
 
 import requests
 
@@ -64,10 +64,10 @@ def _post_chat(session_id: str, message: str) -> tuple[str, dict | None]:
                 event_type = None
                 continue
             if line.startswith("event:"):
-                event_type = line[len("event:"):].strip()
+                event_type = line[len("event:") :].strip()
                 continue
             if line.startswith("data:"):
-                payload = line[len("data:"):].strip()
+                payload = line[len("data:") :].strip()
                 if not payload:
                     continue
                 try:
@@ -96,7 +96,9 @@ def main() -> int:
     for i, turn in enumerate(NARRATIVE_TURNS, start=1):
         print(f"\nUser turn {i}: {turn[:80]}...")
         assistant, done = _post_chat(session_id, turn)
-        print(f"AI ({done['phase'] if done else '?'}, cov={done.get('coverage_pct') if done else '?'}):")
+        print(
+            f"AI ({done['phase'] if done else '?'}, cov={done.get('coverage_pct') if done else '?'}):"
+        )
         print(f"  {assistant[:200]}{'...' if len(assistant) > 200 else ''}")
         if done and done["phase"] == "ready_to_generate":
             print("\n** AI signals ready to generate — stopping the narrative loop **")
@@ -107,7 +109,9 @@ def main() -> int:
     if sess_state["phase"] == "narrative":
         print("\n=== Saying 'that's it' to force transition ===")
         assistant, done = _post_chat(session_id, "that's it")
-        print(f"AI ({done['phase'] if done else '?'}, cov={done.get('coverage_pct') if done else '?'}):")
+        print(
+            f"AI ({done['phase'] if done else '?'}, cov={done.get('coverage_pct') if done else '?'}):"
+        )
         print(f"  {assistant[:200]}{'...' if len(assistant) > 200 else ''}")
 
     print("\n=== Clarification turns (canned answers) ===")
@@ -118,7 +122,9 @@ def main() -> int:
             break
         print(f"\nUser canned answer {i}: {answer[:80]}...")
         assistant, done = _post_chat(session_id, answer)
-        print(f"AI ({done['phase'] if done else '?'}, cov={done.get('coverage_pct') if done else '?'}):")
+        print(
+            f"AI ({done['phase'] if done else '?'}, cov={done.get('coverage_pct') if done else '?'}):"
+        )
         print(f"  {assistant[:200]}{'...' if len(assistant) > 200 else ''}")
 
     print("\n=== Final session state ===")

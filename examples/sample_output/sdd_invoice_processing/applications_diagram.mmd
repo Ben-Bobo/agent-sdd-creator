@@ -1,0 +1,32 @@
+flowchart LR
+    subgraph Source
+        Mailbox[Microsoft Graph API<br/>ap-invoices@ shared mailbox]
+    end
+    subgraph Processing
+        Bot[Automation Bot<br/>Invoice Processing]
+        PDF[PDF Extraction Component<br/>AI/ML or Template-based]
+    end
+    subgraph Output
+        SAP[SAP ECC 6.0<br/>Transaction FB60]
+        Procurement[Microsoft Graph API<br/>Procurement team mailbox]
+        CostOwner[Microsoft Graph API<br/>Cost center owner mailbox]
+        VendorMail[Microsoft Graph API<br/>Originating vendor mailbox]
+        APLead[Microsoft Graph API<br/>AP Lead mailbox]
+    end
+    Mailbox -->|Unread email + PDF attachment| Bot
+    Bot -->|PDF binary content| PDF
+    PDF -->|Extracted invoice fields| Bot
+    Bot -->|Unreadable PDF — resubmission request| VendorMail
+    Bot -->|Vendor name lookup| SAP
+    SAP -->|SAP Vendor ID| Bot
+    Bot -->|Vendor-not-found move + alert| Mailbox
+    Mailbox -->|Vendor-not-found notification| Procurement
+    Bot -->|Parked invoice data| SAP
+    SAP -->|Parked document number| Bot
+    Bot -->|Approval request email| CostOwner
+    CostOwner -->|Approval reply| Mailbox
+    Mailbox -->|Approval confirmation| Bot
+    Bot -->|Post invoice FB60| SAP
+    SAP -->|Posted document number| Bot
+    Bot -->|Mark email read| Mailbox
+    Bot -->|Weekly summary email| APLead

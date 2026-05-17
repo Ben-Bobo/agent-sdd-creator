@@ -1,4 +1,5 @@
 """Prompt file loader. Prompts live in ../prompts/<name>.md."""
+
 from pathlib import Path
 
 PROMPTS_DIR = Path(__file__).parent.parent / "prompts"

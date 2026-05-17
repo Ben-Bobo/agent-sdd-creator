@@ -1,4 +1,5 @@
 """Gap analysis: score Extracted against the developer-readiness rubric."""
+
 from __future__ import annotations
 
 import os
@@ -34,9 +35,7 @@ def _with_recomputed_totals(items: list[CoverageItem]) -> Coverage:
     for i in items:
         by_cat_sum[i.category] += _STATUS_SCORE[i.status]
         by_cat_count[i.category] += 1
-    by_category = {
-        cat: by_cat_sum[cat] / by_cat_count[cat] for cat in by_cat_sum
-    }
+    by_category = {cat: by_cat_sum[cat] / by_cat_count[cat] for cat in by_cat_sum}
 
     return Coverage(
         overall_pct=round(overall_pct, 4),

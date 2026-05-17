@@ -3,6 +3,8 @@
 Loads the Extracted from an existing session, uses the rendered diagram from
 scripts/test_diagram.py if present, fills the template, and prints a summary.
 """
+
+# ruff: noqa: E402  -- sys.path tweak + load_dotenv() must run before app imports
 from __future__ import annotations
 
 import json
@@ -12,6 +14,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from dotenv import load_dotenv
+
 load_dotenv()
 
 from app.docx_filler import fill_template

@@ -1,4 +1,5 @@
 """Applications/systems diagram: Generates Mermaid, mmdc renders PNG."""
+
 from __future__ import annotations
 
 import os
@@ -36,8 +37,7 @@ def render_png(mermaid_src: str, out_path: Path) -> Path:
         )
 
     result = subprocess.run(
-        [mmdc_path, "-i", str(mmd_path), "-o", str(out_path),
-         "-b", "transparent", "-w", "1600"],
+        [mmdc_path, "-i", str(mmd_path), "-o", str(out_path), "-b", "transparent", "-w", "1600"],
         capture_output=True,
         text=True,
     )
@@ -54,7 +54,7 @@ def _strip_fences(s: str) -> str:
     if s.startswith("```"):
         first_newline = s.find("\n")
         if first_newline != -1:
-            s = s[first_newline + 1:]
+            s = s[first_newline + 1 :]
     if s.endswith("```"):
-        s = s[: -3]
+        s = s[:-3]
     return s.strip()

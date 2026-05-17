@@ -8,6 +8,7 @@ Pipeline:
   5. Write gaps.md (markdown bullets of partial/missing rubric items).
   6. Persist session with phase = "generated".
 """
+
 from __future__ import annotations
 
 import os
@@ -58,8 +59,7 @@ def generate_sdd(session: Session) -> list[str]:
         encoding="utf-8",
     )
 
-    files = ["sdd.docx", "applications_diagram.png",
-             "applications_diagram.mmd", "gaps.md"]
+    files = ["sdd.docx", "applications_diagram.png", "applications_diagram.mmd", "gaps.md"]
     session.generated_files = files
     session.phase = "generated"
     session_store.save_session(session)
@@ -115,8 +115,7 @@ def _render_gaps_md(extracted: Extracted, coverage: Coverage) -> str:
         step_by_number = {f"step_{s.number}": s for s in extracted.steps}
         for step_key in sorted(by_step.keys(), key=_step_sort_key):
             step = step_by_number.get(step_key)
-            heading = (f"### {step_key} — {step.summary}"
-                       if step else f"### {step_key}")
+            heading = f"### {step_key} — {step.summary}" if step else f"### {step_key}"
             lines.append(heading)
             for item in by_step[step_key]:
                 if item.question:

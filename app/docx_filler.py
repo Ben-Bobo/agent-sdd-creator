@@ -12,12 +12,13 @@ list. Three kinds of fill operations happen here:
   3. **Scalar tokens.** Everything else is a straight `{{name}}` → string
      replacement, with `[TBD - <reason>]` for missing values.
 """
+
 from __future__ import annotations
 
 import re
+from collections.abc import Iterable, Iterator
 from copy import deepcopy
 from pathlib import Path
-from typing import Iterable, Iterator
 
 from docx import Document
 from docx.oxml import OxmlElement
@@ -146,8 +147,7 @@ def _find_paragraph_with_token(doc, token_name: str) -> Paragraph | None:
 def _fill_repeating_rows(table, prefix: str, items: Iterable) -> None:
     pattern = re.compile(r"\{\{" + re.escape(prefix) + r"\.[a-zA-Z0-9_]+\}\}")
     template_rows = [
-        row for row in table.rows
-        if pattern.search(" ".join(c.text for c in row.cells))
+        row for row in table.rows if pattern.search(" ".join(c.text for c in row.cells))
     ]
     if not template_rows:
         return
@@ -163,7 +163,7 @@ def _fill_repeating_rows(table, prefix: str, items: Iterable) -> None:
         for t in cloned.iter(qn("w:t")):
             if t.text and "{{" in t.text:
                 t.text = TOKEN_RE.sub(
-                    lambda m: _resolve_item_token(m.group(1), prefix, item),
+                    lambda m, _item=item: _resolve_item_token(m.group(1), prefix, _item),
                     t.text,
                 )
         new_row_xmls.append(cloned)
@@ -179,7 +179,7 @@ def _resolve_item_token(token: str, prefix: str, item) -> str:
     expected = prefix + "."
     if not token.startswith(expected):
         return "{{" + token + "}}"
-    field = token[len(expected):]
+    field = token[len(expected) :]
     val = getattr(item, field, None)
     if val is None or val == "":
         return _tbd(f"{prefix}.{field}")
@@ -213,7 +213,9 @@ def _render_steps_block(anchor: Paragraph, steps: list[Step]) -> None:
             for sub in step.action_detail.splitlines():
                 lines.append(f"    {sub}" if sub.strip() else "")
         else:
-            lines.append(f"    {_tbd('exact click-by-click / API sequence missing — ask the business')}")
+            lines.append(
+                f"    {_tbd('exact click-by-click / API sequence missing — ask the business')}"
+            )
 
         if step.decision_logic:
             lines.append(f"    Decision rule: {step.decision_logic}")

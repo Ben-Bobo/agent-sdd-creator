@@ -6,6 +6,7 @@ render PNG. Outputs to evals/output/invoice_diagram.{mmd,png} so you can eyeball
 Requires a working LLM config (.env with ANTHROPIC_API_KEY etc.) and a working
 mmdc on PATH.
 """
+
 from __future__ import annotations
 
 import sys
@@ -40,7 +41,7 @@ def main() -> int:
     out_png = Path("evals/output/invoice_diagram.png")
     print(f"Rendering PNG → {out_png}...")
     rendered = render_png(mermaid_src, out_png)
-    print(f"Done.")
+    print("Done.")
     print(f"  png: {rendered.resolve()}")
     print(f"  mmd: {rendered.with_suffix('.mmd').resolve()}")
     return 0

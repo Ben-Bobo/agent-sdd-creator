@@ -8,6 +8,7 @@ Runs three real LLM calls against the configured MODEL_MAIN:
 Requires ANTHROPIC_API_KEY (or whichever provider key matches MODEL_MAIN)
 in .env. Loads .env via python-dotenv.
 """
+
 from __future__ import annotations
 
 import os
@@ -18,6 +19,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from dotenv import load_dotenv
+
 load_dotenv()
 
 from pydantic import BaseModel  # noqa: E402

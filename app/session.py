@@ -1,4 +1,5 @@
 """Session persistence: JSON files on disk under SESSIONS_DIR/<session_id>/state.json."""
+
 from __future__ import annotations
 
 import os
@@ -27,9 +28,7 @@ def create_session(mode: Mode, input_style: InputStyle) -> Session:
 
 
 def load_session(session_id: str) -> Session:
-    return Session.model_validate_json(
-        _state_path(session_id).read_text(encoding="utf-8")
-    )
+    return Session.model_validate_json(_state_path(session_id).read_text(encoding="utf-8"))
 
 
 def save_session(session: Session) -> None:

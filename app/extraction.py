@@ -1,4 +1,5 @@
 """Extraction pass: raw text in, validated Extracted out."""
+
 from __future__ import annotations
 
 import os

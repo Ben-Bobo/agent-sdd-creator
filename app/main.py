@@ -1,3 +1,4 @@
+# ruff: noqa: E402  -- load_dotenv() must run before modules that read env vars at import time
 import os
 import shutil
 
@@ -61,7 +62,7 @@ def get_session(session_id: str) -> Session:
     try:
         return session_store.load_session(session_id)
     except FileNotFoundError:
-        raise HTTPException(status_code=404, detail="Session not found")
+        raise HTTPException(status_code=404, detail="Session not found") from None
 
 
 @app.post("/api/dropin", response_model=Extracted)
@@ -73,7 +74,7 @@ async def dropin(
     try:
         session = session_store.load_session(session_id)
     except FileNotFoundError:
-        raise HTTPException(status_code=404, detail="Session not found")
+        raise HTTPException(status_code=404, detail="Session not found") from None
 
     parts: list[str] = []
     if raw_text.strip():
@@ -85,14 +86,14 @@ async def dropin(
         except UnicodeDecodeError:
             raise HTTPException(
                 status_code=400,
-                detail=("Uploaded file is not UTF-8 text. "
-                        "Binary formats like .docx aren't supported yet — "
-                        "paste the text instead."),
-            )
+                detail=(
+                    "Uploaded file is not UTF-8 text. "
+                    "Binary formats like .docx aren't supported yet — "
+                    "paste the text instead."
+                ),
+            ) from None
     if not parts:
-        raise HTTPException(
-            status_code=400, detail="Provide raw_text or a file."
-        )
+        raise HTTPException(status_code=400, detail="Provide raw_text or a file.")
 
     combined = "\n\n".join(parts)
     session.raw_input = combined
@@ -115,7 +116,7 @@ def intake(body: IntakeRequest) -> dict:
     try:
         session = session_store.load_session(body.session_id)
     except FileNotFoundError:
-        raise HTTPException(status_code=404, detail="Session not found")
+        raise HTTPException(status_code=404, detail="Session not found") from None
     handle_intake(session, body.intake)
     return {
         "phase": session.phase,
@@ -128,7 +129,7 @@ async def chat(session_id: str, body: ChatRequest) -> StreamingResponse:
     try:
         session = session_store.load_session(session_id)
     except FileNotFoundError:
-        raise HTTPException(status_code=404, detail="Session not found")
+        raise HTTPException(status_code=404, detail="Session not found") from None
     if session.phase == "intake":
         raise HTTPException(
             status_code=400,
@@ -140,9 +141,7 @@ async def chat(session_id: str, body: ChatRequest) -> StreamingResponse:
             yield f"data: {json.dumps({'text': chunk})}\n\n"
         final = {
             "phase": session.phase,
-            "coverage_pct": (
-                session.coverage.overall_pct if session.coverage else None
-            ),
+            "coverage_pct": (session.coverage.overall_pct if session.coverage else None),
         }
         yield f"event: done\ndata: {json.dumps(final)}\n\n"
 
@@ -154,7 +153,7 @@ def coverage(session_id: str) -> Coverage:
     try:
         session = session_store.load_session(session_id)
     except FileNotFoundError:
-        raise HTTPException(status_code=404, detail="Session not found")
+        raise HTTPException(status_code=404, detail="Session not found") from None
     if session.extracted is None:
         raise HTTPException(
             status_code=400,
@@ -170,7 +169,7 @@ def generate(session_id: str) -> dict:
     try:
         session = session_store.load_session(session_id)
     except FileNotFoundError:
-        raise HTTPException(status_code=404, detail="Session not found")
+        raise HTTPException(status_code=404, detail="Session not found") from None
     if session.extracted is None:
         raise HTTPException(
             status_code=400,

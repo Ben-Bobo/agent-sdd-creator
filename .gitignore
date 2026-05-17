@@ -10,3 +10,4 @@ dist/
 /examples/private/
 evals/output/
 /Automation_SDD.docx
+.claude/

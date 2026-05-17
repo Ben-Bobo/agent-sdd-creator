@@ -10,6 +10,7 @@ one-off bootstrap done during Ticket 7 already produced a tokenized template at
 that path. This script is for re-tokenizing after the operator changes the
 SDD layout.
 """
+
 from __future__ import annotations
 
 import sys

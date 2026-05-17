@@ -36,6 +36,18 @@ MODEL_CHEAP=openai/internal-claude-haiku
 
 The model string's prefix (`anthropic/`, `openai/`, `bedrock/`, …) tells LiteLLM how to route. App code only references the semantic roles `MODEL_MAIN` and `MODEL_CHEAP`.
 
+## Bringing your own SDD template
+
+`templates/Automation_SDD_template.docx` is the docx the generator fills. It's already tokenized to match the included sample SDD layout. If you want to use your own template instead:
+
+1. Save your starting docx somewhere outside `templates/` (e.g. the repo root).
+2. Run `python scripts/prepare_template.py` to print the list of `{{tokens}}` and where each one belongs (this script just prints guidance — it doesn't modify your docx).
+3. In Word, paste each token into the matching cell. For the Applications, Errors, and Reports tables, keep one template data row with the `{{prefix.field}}` tokens; delete any extra empty rows (the filler clones the template row once per item).
+4. Add a paragraph containing `{{applications_diagram}}` where the diagram should go, and a paragraph containing `{{steps}}` where the step-by-step flow should go.
+5. Save the tokenized result to `templates/Automation_SDD_template.docx`, overwriting the shipped example.
+
+Token names and locations are documented in `prompts/template_tokens.md`.
+
 ## Status
 
 v1 in progress. See `tasks.md` for the ticket plan and `spec.md` for the full design.

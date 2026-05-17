@@ -12,14 +12,18 @@ if shutil.which(_mmdc) is None:
         "Install with: npm install -g @mermaid-js/mermaid-cli"
     )
 
+from pathlib import Path
+
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
-from fastapi.responses import PlainTextResponse
+from fastapi.responses import FileResponse, PlainTextResponse
 from pydantic import BaseModel
 
 from . import session as session_store
 from .extraction import extract_from_text
 from .gap_analysis import analyze as analyze_gaps
 from .models import Coverage, Extracted, InputStyle, Mode, Session
+from .sdd_generator import generate_sdd
+from .technology_fit import generate_report as generate_tech_fit_report
 
 app = FastAPI(title="Automation SDD Builder")
 
@@ -103,3 +107,49 @@ def coverage(session_id: str) -> Coverage:
     session.coverage = analyze_gaps(session.extracted)
     session_store.save_session(session)
     return session.coverage
+
+
+@app.post("/api/generate/{session_id}")
+def generate(session_id: str) -> dict:
+    try:
+        session = session_store.load_session(session_id)
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="Session not found")
+    if session.extracted is None:
+        raise HTTPException(
+            status_code=400,
+            detail="Run extraction first (POST /api/dropin or chat intake).",
+        )
+
+    if session.mode == "sdd_builder":
+        files = generate_sdd(session)
+    elif session.mode == "technology_fit":
+        report = generate_tech_fit_report(session)
+        session_dir = _session_dir(session_id)
+        session_dir.mkdir(parents=True, exist_ok=True)
+        (session_dir / "report.md").write_text(report, encoding="utf-8")
+        session.generated_files = ["report.md"]
+        session.phase = "generated"
+        session_store.save_session(session)
+        files = session.generated_files
+    else:
+        raise HTTPException(status_code=400, detail=f"Unknown mode: {session.mode}")
+
+    return {"files": files}
+
+
+@app.get("/api/download/{session_id}/{filename}")
+def download(session_id: str, filename: str) -> FileResponse:
+    if "/" in filename or "\\" in filename or filename.startswith(".."):
+        raise HTTPException(status_code=400, detail="Invalid filename")
+    session_dir = _session_dir(session_id).resolve()
+    target = (session_dir / filename).resolve()
+    if not str(target).startswith(str(session_dir)):
+        raise HTTPException(status_code=400, detail="Invalid filename")
+    if not target.is_file():
+        raise HTTPException(status_code=404, detail="File not found")
+    return FileResponse(str(target), filename=filename)
+
+
+def _session_dir(session_id: str) -> Path:
+    return Path(os.environ.get("SESSIONS_DIR", "./sessions")) / session_id

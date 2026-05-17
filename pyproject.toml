@@ -1,0 +1,24 @@
+[project]
+name = "automation-sdd-builder"
+version = "0.1.0"
+description = "Turn fuzzy business descriptions into developer-ready Software Design Documents for automation projects."
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi",
+    "uvicorn[standard]",
+    "litellm",
+    "pydantic>=2",
+    "python-docx",
+    "jinja2",
+    "python-dotenv",
+    "python-multipart",
+    "pytest",
+]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["app*"]

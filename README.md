@@ -21,6 +21,21 @@ uvicorn app.main:app --reload
 # Visit http://127.0.0.1:8000/
 ```
 
+## Using a different LLM backend
+
+The app talks to models through [LiteLLM](https://docs.litellm.ai), so any provider LiteLLM supports works — Anthropic direct, Azure, Bedrock, Ollama, or any OpenAI-compatible corporate gateway. Switch by editing `.env` only; no code changes.
+
+For example, to route through an internal OpenAI-compatible gateway:
+
+```
+OPENAI_API_BASE=https://gateway.yourcompany.internal/v1
+OPENAI_API_KEY=<gateway-token>
+MODEL_MAIN=openai/internal-claude-sonnet
+MODEL_CHEAP=openai/internal-claude-haiku
+```
+
+The model string's prefix (`anthropic/`, `openai/`, `bedrock/`, …) tells LiteLLM how to route. App code only references the semantic roles `MODEL_MAIN` and `MODEL_CHEAP`.
+
 ## Status
 
 v1 in progress. See `tasks.md` for the ticket plan and `spec.md` for the full design.

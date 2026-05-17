@@ -28,3 +28,7 @@ For the **process overall**, also required:
 - `covered` — explicitly stated, unambiguous, actionable for a developer.
 - `partial` — referenced but missing a key detail (e.g., a decision rule mentioned without its threshold).
 - `missing` — not addressed at all.
+
+## What's NOT in scope for any category
+
+URL / tenant / server-level detail, credentials, service-account setup, API library implementation specifics, and other automation-platform configuration are **out of scope**. The platform layer already solves these (reusable operations like `send_mail`, `get_mail`, `move_to_folder` are assumed to exist). Do not score those as gaps and do not generate questions about them.

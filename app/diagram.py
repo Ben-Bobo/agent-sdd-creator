@@ -1,4 +1,4 @@
-"""Applications/systems diagram: Claude generates Mermaid, mmdc renders PNG."""
+"""Applications/systems diagram: Generates Mermaid, mmdc renders PNG."""
 from __future__ import annotations
 
 import os

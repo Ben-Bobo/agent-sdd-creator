@@ -12,16 +12,18 @@ if shutil.which(_mmdc) is None:
         "Install with: npm install -g @mermaid-js/mermaid-cli"
     )
 
+import json
 from pathlib import Path
 
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
-from fastapi.responses import FileResponse, PlainTextResponse
+from fastapi.responses import FileResponse, PlainTextResponse, StreamingResponse
 from pydantic import BaseModel
 
 from . import session as session_store
+from .chat import handle_intake, handle_turn
 from .extraction import extract_from_text
 from .gap_analysis import analyze as analyze_gaps
-from .models import Coverage, Extracted, InputStyle, Mode, Session
+from .models import Coverage, Extracted, InputStyle, Intake, Mode, Session
 from .sdd_generator import generate_sdd
 from .technology_fit import generate_report as generate_tech_fit_report
 
@@ -91,6 +93,54 @@ async def dropin(
     session.extracted = extract_from_text(combined)
     session_store.save_session(session)
     return session.extracted
+
+
+class IntakeRequest(BaseModel):
+    session_id: str
+    intake: Intake
+
+
+class ChatRequest(BaseModel):
+    message: str
+
+
+@app.post("/api/intake")
+def intake(body: IntakeRequest) -> dict:
+    try:
+        session = session_store.load_session(body.session_id)
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="Session not found")
+    handle_intake(session, body.intake)
+    return {
+        "phase": session.phase,
+        "opening_prompt": session.transcript[-1].content if session.transcript else None,
+    }
+
+
+@app.post("/api/chat/{session_id}")
+async def chat(session_id: str, body: ChatRequest) -> StreamingResponse:
+    try:
+        session = session_store.load_session(session_id)
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="Session not found")
+    if session.phase == "intake":
+        raise HTTPException(
+            status_code=400,
+            detail="Submit /api/intake before chatting.",
+        )
+
+    async def event_stream():
+        async for chunk in handle_turn(session, body.message):
+            yield f"data: {json.dumps({'text': chunk})}\n\n"
+        final = {
+            "phase": session.phase,
+            "coverage_pct": (
+                session.coverage.overall_pct if session.coverage else None
+            ),
+        }
+        yield f"event: done\ndata: {json.dumps(final)}\n\n"
+
+    return StreamingResponse(event_stream(), media_type="text/event-stream")
 
 
 @app.post("/api/coverage/{session_id}", response_model=Coverage)

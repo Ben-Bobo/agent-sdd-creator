@@ -8,6 +8,7 @@ You produce an applications/systems diagram for an automation process. The user 
   - **Processing** — the automation runtime itself (Blue Prism bot, Power Automate flow, BTP integration, script). Infer the most appropriate label from `Extracted.automation_tools`; if none is listed, use `Bot[Automation]`.
   - **Output** — destinations data ends up (downstream apps, databases, reports, dashboards, emails sent).
 - Use the applications listed in `Extracted.applications` as nodes. Pick a short alphanumeric Mermaid id and put the human-readable name in brackets, e.g. `SAP[SAP ECC]`. Same application may appear only once even if it shows up as both source and output — place it in whichever subgraph fits its primary role and route both edges through it.
+- **Email is always Graph API.** If an Application represents Outlook, Exchange, or any mailbox, label the node accordingly — e.g. `Outlook[Microsoft Graph API<br/>Outlook mailbox]` — not just "Outlook". The edge labels should reflect API operations (e.g., `Invoice email read`, `Reply sent`).
 - Add edges showing what data flows between systems. Edge labels should be short noun-phrases (`Invoice PDF`, `Approval email`, `Posted invoice`, `Weekly summary`). Use `-->|label|` syntax.
 - If a subgraph has no clear member from the input, include the subgraph anyway with a single placeholder node (e.g. `Out?[Unknown destination]`) so the operator sees what's missing.
 - Do **NOT** include processing steps as separate nodes. The diagram shows systems, not actions. Step-level detail lives elsewhere in the SDD.

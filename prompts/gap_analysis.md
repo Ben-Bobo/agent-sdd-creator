@@ -11,6 +11,10 @@ For each item:
 - `status` — `covered`, `partial`, or `missing` per the rubric's scoring rules.
 - `question` — **only for `partial` and `missing`**. Leave null for `covered`.
 
+## A note on the `action` category
+
+The `action` rubric category specifically requires **click-by-click UI detail** (exact menu path, transaction code, button labels, field names) **or** a concrete API call sequence. A step whose `action_detail` is null, or that only states a high-level summary like "post the invoice", "approve the request", "retrieve the document", scores as `partial` at best, usually `missing`. The clarifying question should ask for the literal navigation/click sequence a developer who doesn't know the app would need. Example: "For step 9 (post the parked invoice in SAP), what's the exact menu path or transaction code Jamie uses to find a parked document, and which button does he click to post it?"
+
 ## How to write questions
 
 Questions go to a business user — the operator will paste them into an email or read them in a meeting. They must be:

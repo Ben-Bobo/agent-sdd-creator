@@ -208,18 +208,20 @@ def _render_steps_block(anchor: Paragraph, steps: list[Step]) -> None:
     lines: list[str] = []
     for step in steps:
         lines.append(f"Step {step.number}: {step.summary}")
-        for label, value in (
-            ("App / Screen", _join_app_screen(step)),
-            ("Action", step.action_detail),
-            ("Inputs", "; ".join(step.data_inputs) if step.data_inputs else None),
-            ("Outputs", "; ".join(step.data_outputs) if step.data_outputs else None),
-            ("Decision", step.decision_logic),
-            ("Exceptions",
-             "; ".join(step.exception_paths) if step.exception_paths else None),
-            ("Success", step.success_criterion),
-        ):
-            if value:
-                lines.append(f"    {label}: {value}")
+
+        if step.action_detail:
+            for sub in step.action_detail.splitlines():
+                lines.append(f"    {sub}" if sub.strip() else "")
+        else:
+            lines.append(f"    {_tbd('exact click-by-click / API sequence missing — ask the business')}")
+
+        if step.decision_logic:
+            lines.append(f"    Decision rule: {step.decision_logic}")
+        if step.exception_paths:
+            lines.append(f"    Exception handling: {'; '.join(step.exception_paths)}")
+        if step.success_criterion:
+            lines.append(f"    Done when: {step.success_criterion}")
+
         lines.append("")
     if lines and lines[-1] == "":
         lines.pop()
@@ -239,8 +241,3 @@ def _render_steps_block(anchor: Paragraph, steps: list[Step]) -> None:
         new_p.append(r)
         cursor_xml.addnext(new_p)
         cursor_xml = new_p
-
-
-def _join_app_screen(step: Step) -> str | None:
-    parts = [p for p in (step.application, step.screen) if p]
-    return " / ".join(parts) if parts else None

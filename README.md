@@ -1,6 +1,6 @@
 # Automation SDD Builder
 
-Turn fuzzy business descriptions of a process into a developer-ready spec. Drop in a meeting transcript or have a guided chat, and the app produces a fully filled **Software Design Document** matching your Word template — with the applications diagram embedded inline.
+Turn fuzzy business descriptions of a process into a developer-ready spec.
 
 Built for the in-between work an automation analyst does every day: translating business hand-waving into something a Blue Prism / Power Automate / SAP BTP developer can actually build from.
 
@@ -48,8 +48,7 @@ flowchart LR
     Routes <--> Disk
 ```
 
-The orchestration is a hand-written state machine — no agent framework. Where LLM judgment is needed (chat clarifier, "is the user done" detection, narrative generation, gap analysis), it's a single-purpose call with a strict Pydantic-parsed return.
-
+The orchestration is a hand-written state machine: *no agent framework*.
 ## Quickstart
 
 **Prerequisites:** Python 3.11+, Node 18+, [`uv`](https://docs.astral.sh/uv/), and `@mermaid-js/mermaid-cli` (`npm install -g @mermaid-js/mermaid-cli`). An Anthropic API key from [console.anthropic.com](https://console.anthropic.com) — note this is **separate from a Claude.ai subscription**.
@@ -88,7 +87,7 @@ The app talks to models through [LiteLLM](https://docs.litellm.ai), so any provi
 To route through an internal gateway:
 
 ```
-OPENAI_API_BASE=https://gateway.yourcompany.internal/v1
+OPENAI_API_BASE=
 OPENAI_API_KEY=<gateway-token>
 MODEL_MAIN=openai/internal-claude-sonnet
 MODEL_CHEAP=openai/internal-claude-haiku
@@ -125,15 +124,6 @@ sessions/            generated at runtime; one folder per session, JSON state + 
 - **Vanilla JS, no React, no build step.** One language (Python) for the backend, a single static HTML/CSS/JS bundle for the frontend, SSE for streaming. Deployable as one container later with no rework.
 - **Two-model strategy.** A capable model (`MODEL_MAIN`) does extraction, narrative, and clarifier selection; a cheap model (`MODEL_CHEAP`) handles the one repetitive classifier ("is the user done describing the process?"). Configurable per environment.
 
-## Roadmap (not in v1)
-
-- Web deployment + corporate SSO (Azure AD / Okta)
-- Multi-user sessions and sharable session links for business users
-- Approval workflow (draft → review → approved)
-- Real DB instead of JSON files
-- Audio/video transcription input
-- Refinement of generated docx via additional chat ("change step 3 to…")
-- Platform-specific output adapters (Blue Prism object skeletons, Power Automate flow JSON)
 
 ## Built with
 

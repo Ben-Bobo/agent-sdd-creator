@@ -58,7 +58,7 @@ Examples of good `action` questions:
 
 ## Output
 
-Return ONLY a JSON object matching the supplied schema. The `overall_pct` and `by_category` fields will be recomputed by the caller — set both to `0` and `{}` respectively. Populate `items[]`.
+Return ONLY a JSON object matching the supplied schema — a single `items` array. Each item must include `id`, `category`, `status`, and `question` (use an empty string `""` for `question` when `status` is `covered`).
 
 ---
 

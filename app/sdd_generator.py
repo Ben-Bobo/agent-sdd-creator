@@ -36,6 +36,7 @@ class _Narrative(BaseModel):
     summary: str
     rerun_on_failure: str
     artificial_intelligence: list[str]
+    design_improvements: list[str]
 
 
 def generate_sdd(session: Session) -> Iterator[tuple[str, Any]]:
@@ -51,6 +52,7 @@ def generate_sdd(session: Session) -> Iterator[tuple[str, Any]]:
     session.extracted.summary = narrative.summary
     session.extracted.rerun_on_failure = narrative.rerun_on_failure
     session.extracted.artificial_intelligence = narrative.artificial_intelligence
+    session.extracted.design_improvements = narrative.design_improvements
 
     session_dir = session_store.session_dir(session.session_id)
     session_dir.mkdir(parents=True, exist_ok=True)

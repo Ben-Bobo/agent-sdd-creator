@@ -53,10 +53,10 @@ def fill_template(
         _fill_repeating_rows(table, "err", extracted.known_errors)
         _fill_repeating_rows(table, "report", extracted.reports)
 
-    # Steps block.
+    # Steps block (+ design improvements appended in the same render).
     steps_anchor = _find_paragraph_with_token(doc, "steps")
     if steps_anchor is not None:
-        _render_steps_block(steps_anchor, extracted.steps)
+        _render_steps_block(steps_anchor, extracted.steps, extracted.design_improvements)
 
     # Diagram embed.
     diagram_anchor = _find_paragraph_with_token(doc, "applications_diagram")
@@ -90,10 +90,10 @@ def _build_scalar_values(ex: Extracted) -> dict[str, str]:
         "summary": s(ex.summary, "summary missing"),
         "business_owner": s(ex.business_owner, "owner missing"),
         "jira_project": _tbd("populate manually"),
-        "automation_tools": s(ex.automation_tools),
-        "btp_services": s(ex.btp_services),
+        "automation_tools": _tbd("populate manually"),
+        "btp_services": _tbd("populate manually"),
         "document_processing": s(ex.document_processing),
-        "new_sdks_objects": s(ex.new_sdks_objects),
+        "new_sdks_objects": _tbd("populate manually"),
         "artificial_intelligence": s(ex.artificial_intelligence),
         "credential_management": s(ex.credential_management),
         "tool_selection_rationale": _tbd("populate manually"),
@@ -202,7 +202,9 @@ def _embed_diagram(anchor: Paragraph, png_path: Path) -> None:
     run.add_picture(str(png_path), width=Inches(6.5))
 
 
-def _render_steps_block(anchor: Paragraph, steps: list[Step]) -> None:
+def _render_steps_block(
+    anchor: Paragraph, steps: list[Step], improvements: list[str]
+) -> None:
     if not steps:
         _set_paragraph_text(anchor, _tbd("no steps extracted"))
         return
@@ -213,20 +215,26 @@ def _render_steps_block(anchor: Paragraph, steps: list[Step]) -> None:
 
         if step.action_detail:
             for sub in step.action_detail.splitlines():
-                lines.append(f"    {sub}" if sub.strip() else "")
+                lines.append(f"    • {sub}" if sub.strip() else "")
         else:
             lines.append(
-                f"    {_tbd('exact click-by-click / API sequence missing — ask the business')}"
+                f"    • {_tbd('exact click-by-click / API sequence missing — ask the business')}"
             )
 
         if step.decision_logic:
-            lines.append(f"    Decision rule: {step.decision_logic}")
+            lines.append(f"    • Decision rule: {step.decision_logic}")
         if step.exception_paths:
-            lines.append(f"    Exception handling: {'; '.join(step.exception_paths)}")
+            lines.append(f"    • Exception handling: {'; '.join(step.exception_paths)}")
 
         lines.append("")
     if lines and lines[-1] == "":
         lines.pop()
+
+    if improvements:
+        lines.append("")
+        lines.append("Design improvements (suggested):")
+        for item in improvements:
+            lines.append(f"    • {item}")
 
     _set_paragraph_text(anchor, lines[0])
     cursor_xml = anchor._element

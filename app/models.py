@@ -11,63 +11,61 @@ from pydantic import BaseModel, Field
 
 class Application(BaseModel):
     name: str
-    version: str | None = None
-    language: str | None = None
-    environment: str | None = None
-    access_method: str | None = None
-    notes: str | None = None
+    version: str
+    language: str
+    environment: str
+    access_method: str
+    notes: str
 
 
 class ErrorException(BaseModel):
     name: str
-    action: str | None = None
-    parameters: str | None = None
-    handling: str | None = None
+    action: str
+    parameters: str
+    handling: str
 
 
 class Step(BaseModel):
     number: int
     summary: str
-    application: str | None = None
-    screen: str | None = None
-    action_detail: str | None = None
-    data_inputs: list[str] = Field(default_factory=list)
-    data_outputs: list[str] = Field(default_factory=list)
-    decision_logic: str | None = None
-    exception_paths: list[str] = Field(default_factory=list)
-    success_criterion: str | None = None
+    application: str
+    screen: str
+    action_detail: str
+    data_inputs: list[str]
+    data_outputs: list[str]
+    decision_logic: str
+    exception_paths: list[str]
+    success_criterion: str
 
 
 class ReportRow(BaseModel):
     report_type: str
-    update_frequency: str | None = None
-    details: str | None = None
-    monitoring_tool: str | None = None
+    update_frequency: str
+    details: str
+    monitoring_tool: str
 
 
 class Extracted(BaseModel):
     project_name: str
-    business_owner: str | None = None
+    business_owner: str
     summary: str
-    automation_tools: list[str] = Field(default_factory=list)
-    btp_services: list[str] = Field(default_factory=list)
-    document_processing: list[str] = Field(default_factory=list)
-    new_sdks_objects: list[str] = Field(default_factory=list)
-    artificial_intelligence: list[str] = Field(default_factory=list)
-    credential_management: str | None = None
-    tool_selection_rationale: str | None = None
-    business_criticality: str | None = None
-    complexity_score: str | None = None
-    applications: list[Application] = Field(default_factory=list)
-    known_errors: list[ErrorException] = Field(default_factory=list)
-    accepted_failure_threshold: str | None = None
-    rerun_on_failure: str | None = None
-    schedule_frequency: str | None = None
-    bot_utilization_pct: float | None = None
-    triggers: str | None = None
-    reports: list[ReportRow] = Field(default_factory=list)
-    steps: list[Step] = Field(default_factory=list)
-    applications_diagram_mermaid: str | None = None
+    document_processing: list[str]
+    artificial_intelligence: list[str]
+    credential_management: str
+    tool_selection_rationale: str
+    business_criticality: str
+    complexity_score: str
+    applications: list[Application]
+    known_errors: list[ErrorException]
+    accepted_failure_threshold: str
+    rerun_on_failure: str
+    schedule_frequency: str
+    bot_utilization_pct: str
+    triggers: str
+    reports: list[ReportRow]
+    steps: list[Step]
+    applications_diagram_mermaid: str
+    design_improvements: list[str]
 
 
 # --- Session schema ---------------------------------------------------------
@@ -98,7 +96,7 @@ class CoverageItem(BaseModel):
     id: str
     category: str
     status: Literal["covered", "partial", "missing"]
-    question: str | None = None
+    question: str
 
 
 class Coverage(BaseModel):

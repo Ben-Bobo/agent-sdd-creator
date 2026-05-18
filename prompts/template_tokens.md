@@ -18,10 +18,10 @@ Conventions:
 
 | Cell label | Token | Source |
 |---|---|---|
-| Automation Tools | `{{automation_tools}}` | `Extracted.automation_tools[]` |
-| BTP Services | `{{btp_services}}` | `Extracted.btp_services[]` |
+| Automation Tools | `{{automation_tools}}` | (not extracted — defaults to TBD) |
+| BTP Services | `{{btp_services}}` | (not extracted — defaults to TBD) |
 | Document Processing | `{{document_processing}}` | `Extracted.document_processing[]` |
-| New SDKs/Objects | `{{new_sdks_objects}}` | `Extracted.new_sdks_objects[]` |
+| New SDKs/Objects | `{{new_sdks_objects}}` | (not extracted — defaults to TBD) |
 | Artificial Intelligence | `{{artificial_intelligence}}` | `Extracted.artificial_intelligence[]` (set by narrative pass; usually `[]`) |
 | Credential Management | `{{credential_management}}` | `Extracted.credential_management` |
 

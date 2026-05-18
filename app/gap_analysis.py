@@ -5,6 +5,8 @@ from __future__ import annotations
 import os
 from collections import defaultdict
 
+from pydantic import BaseModel
+
 from .llm import complete_json
 from .models import Coverage, CoverageItem, Extracted
 from .prompts import load_prompt
@@ -12,12 +14,21 @@ from .prompts import load_prompt
 _STATUS_SCORE = {"covered": 1.0, "partial": 0.5, "missing": 0.0}
 
 
+class _CoverageLLM(BaseModel):
+    """LLM-facing schema: just the items list. ``overall_pct`` and
+    ``by_category`` are recomputed from items by the caller, so they don't
+    need to be in the schema sent to the model (and including a dict-typed
+    field would trigger Anthropic's ``additionalProperties: false`` rule)."""
+
+    items: list[CoverageItem]
+
+
 def analyze(extracted: Extracted) -> Coverage:
     system = load_prompt("gap_analysis") + "\n\n" + load_prompt("rubric")
     raw = complete_json(
         system=system,
         messages=[{"role": "user", "content": extracted.model_dump_json(indent=2)}],
-        schema=Coverage,
+        schema=_CoverageLLM,
         model=os.environ["MODEL_MAIN"],
         max_tokens=8192,
     )

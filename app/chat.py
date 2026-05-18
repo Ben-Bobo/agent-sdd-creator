@@ -59,11 +59,35 @@ def handle_intake(session: Session, intake_data: Intake) -> None:
     session.extracted = Extracted(
         project_name=intake_data.project_name or "Unspecified",
         summary="Captured during chat (pending narrative).",
-        business_owner=intake_data.business_owner,
-        business_criticality=intake_data.criticality,
-        schedule_frequency=intake_data.frequency,
+        business_owner=intake_data.business_owner or "",
+        document_processing=[],
+        artificial_intelligence=[],
+        credential_management="",
+        tool_selection_rationale="",
+        business_criticality=intake_data.criticality or "",
+        complexity_score="",
+        applications=[
+            Application(
+                name=a,
+                version="",
+                language="",
+                environment="",
+                access_method="",
+                notes="",
+            )
+            for a in (intake_data.applications_rough or [])
+            if a
+        ],
+        known_errors=[],
+        accepted_failure_threshold="",
+        rerun_on_failure="",
+        schedule_frequency=intake_data.frequency or "",
+        bot_utilization_pct="",
         triggers=_format_trigger(intake_data),
-        applications=[Application(name=a) for a in (intake_data.applications_rough or []) if a],
+        reports=[],
+        steps=[],
+        applications_diagram_mermaid="",
+        design_improvements=[],
     )
     session.phase = "narrative"
     session.transcript.append(ChatMessage(role="assistant", content=OPENING_PROMPT, ts=_now()))
@@ -77,9 +101,9 @@ async def handle_turn(session: Session, user_message: str) -> AsyncIterator[tupl
     session.transcript.append(ChatMessage(role="user", content=user_message, ts=_now()))
 
     if _has_new_detail(session.transcript):
-        yield "status", "Re-extracting from transcript"
+        yield "status", "Updating my notes"
         session.extracted = extract_from_text(_build_chat_context(session))
-        yield "status", "Updating gap analysis"
+        yield "status", "Checking what's still missing"
         session.coverage = analyze_gaps(session.extracted)
 
     if session.phase == "narrative":
@@ -100,7 +124,7 @@ async def handle_turn(session: Session, user_message: str) -> AsyncIterator[tupl
         for word in _word_chunks(READY_MESSAGE):
             yield "content", word
     elif session.phase == "clarification":
-        yield "status", "Drafting next question"
+        yield "status", "Thinking of a follow-up"
         system = load_prompt("system_chat") + "\n\n---\n\n" + load_prompt("clarifier_question")
         context_body = _build_clarifier_context(session)
         async for chunk in stream(
@@ -162,9 +186,9 @@ def _has_new_detail(transcript: list[ChatMessage]) -> bool:
     return not result.strip().lower().startswith("n")
 
 
-def _format_trigger(intake: Intake) -> str | None:
+def _format_trigger(intake: Intake) -> str:
     parts = [p for p in (intake.trigger_type, intake.trigger_detail) if p]
-    return " — ".join(parts) if parts else None
+    return " — ".join(parts) if parts else ""
 
 
 def _build_chat_context(session: Session) -> str:

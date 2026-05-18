@@ -5,7 +5,7 @@ You produce an applications/systems diagram for an automation process. The user 
 - Start with `flowchart LR` on the first line. The very first character of your output must be `f`.
 - Group nodes into three subgraphs by role:
   - **Source** — systems where data enters the flow (inboxes, source apps, sensors, vendor portals).
-  - **Processing** — the automation runtime itself (Blue Prism bot, Power Automate flow, BTP integration, script). Infer the most appropriate label from `Extracted.automation_tools`; if none is listed, use `Bot[Automation]`.
+  - **Processing** — the automation runtime itself. The specific platform is a developer decision and is not extracted; use `Bot[Automation]` as the label.
   - **Output** — destinations data ends up (downstream apps, databases, reports, dashboards, emails sent).
 - Use the applications listed in `Extracted.applications` as nodes. Pick a short alphanumeric Mermaid id and put the human-readable name in brackets, e.g. `SAP[SAP ECC]`. Same application may appear only once even if it shows up as both source and output — place it in whichever subgraph fits its primary role and route both edges through it.
 - **Email is always Graph API.** If an Application represents Outlook, Exchange, or any mailbox, label the node accordingly — e.g. `Outlook[Microsoft Graph API<br/>Outlook mailbox]` — not just "Outlook". The edge labels should reflect API operations (e.g., `Invoice email read`, `Reply sent`).

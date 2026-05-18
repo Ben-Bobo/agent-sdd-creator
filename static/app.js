@@ -34,6 +34,21 @@ function setCoverage(pct) {
   updateGenerateButton();
 }
 
+// During chat-mode clarification, the bar shows "Question N of M" instead
+// of a coverage percentage (we don't compute coverage per-turn anymore).
+function setClarificationProgress(position, total) {
+  state.coveragePct = total > 0 ? position / total : 0;
+  $("#coverage-label").textContent = "Progress";
+  if (total === 0) {
+    $("#coverage-pct").textContent = "—";
+    $("#coverage-fill").style.width = "0%";
+  } else {
+    $("#coverage-pct").textContent = `Question ${Math.min(position + 1, total)} of ${total}`;
+    $("#coverage-fill").style.width = ((position / total) * 100).toFixed(0) + "%";
+  }
+  updateGenerateButton();
+}
+
 function updateGenerateButton() {
   const btn = $("#generate-btn");
   const havePhase = state.phase !== null;
@@ -113,7 +128,14 @@ async function ensureSession() {
         const s = await r.json();
         state.inputStyle = s.input_style;
         setPhase(s.phase);
-        setCoverage(s.coverage ? s.coverage.overall_pct : null);
+        if (s.clarification_cursor && s.clarification_cursor.length > 0) {
+          setClarificationProgress(
+            s.clarification_position || 0,
+            s.clarification_cursor.length
+          );
+        } else {
+          setCoverage(s.coverage ? s.coverage.overall_pct : null);
+        }
         applyStyleButtons();
         lockSelectors(true);
         showPanels();
@@ -286,8 +308,14 @@ function handleChatSseBlock(block, bodySpan, chatState) {
   }
   if (evType === "done") {
     setPhase(obj.phase);
-    if (obj.coverage_pct !== null && obj.coverage_pct !== undefined)
+    if (obj.clarification_progress) {
+      setClarificationProgress(
+        obj.clarification_progress.position,
+        obj.clarification_progress.total
+      );
+    } else if (obj.coverage_pct !== null && obj.coverage_pct !== undefined) {
       setCoverage(obj.coverage_pct);
+    }
     showPanels();
   } else if (evType === "status") {
     if (!chatState.receivingContent)

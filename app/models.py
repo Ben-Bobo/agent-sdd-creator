@@ -11,8 +11,6 @@ from pydantic import BaseModel, Field
 
 class Application(BaseModel):
     name: str
-    version: str
-    language: str
     environment: str
     access_method: str
     notes: str
@@ -36,6 +34,8 @@ class Step(BaseModel):
     decision_logic: str
     exception_paths: list[str]
     success_criterion: str
+    group: str
+    design_note: str
 
 
 class ReportRow(BaseModel):
@@ -65,7 +65,6 @@ class Extracted(BaseModel):
     reports: list[ReportRow]
     steps: list[Step]
     applications_diagram_mermaid: str
-    design_improvements: list[str]
 
 
 # --- Session schema ---------------------------------------------------------
@@ -105,6 +104,15 @@ class Coverage(BaseModel):
     items: list[CoverageItem] = Field(default_factory=list)
 
 
+class ClarificationGap(BaseModel):
+    """One row in the clarification cursor: the gap to fill, how many times
+    we've asked, and (once we move past it) whether the user resolved it."""
+
+    item: CoverageItem
+    attempts: int = 0
+    final_status: Literal["satisfied", "unresolved"] | None = None
+
+
 class Session(BaseModel):
     session_id: str
     input_style: InputStyle
@@ -114,4 +122,6 @@ class Session(BaseModel):
     transcript: list[ChatMessage] = Field(default_factory=list)
     extracted: Extracted | None = None
     coverage: Coverage | None = None
+    clarification_cursor: list[ClarificationGap] = Field(default_factory=list)
+    clarification_position: int = 0
     generated_files: list[str] = Field(default_factory=list)

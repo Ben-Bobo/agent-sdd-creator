@@ -32,7 +32,13 @@ So: ask them for whatever they didn't already cover, at whatever level — rules
 - Tenant domains, API URLs, server names, UPNs
 - Credentials, service-account setup, MFA mechanics
 - Library / SDK implementation details ("which Graph endpoint syntax", "what HTTP verb")
+- **Workflow / technical failures the developer handles** — file corrupt, attachment unreadable, API/HTTP errors, library exceptions, network timeouts, retries/backoff, status-code handling, token refresh, source system unavailable, schema drift, email send failed. The developer designs reliability and retry behavior during build; the business does not own these decisions and should never be asked about them.
 - Anything the automation platform layer already solves — the chat user is told to assume reusable platform operations like `send_mail`, `get_mail`, `move_to_folder` already exist.
+
+For `exception_paths`, only score `partial` / `missing` when there is a **business-side process branch for data variability** that the user plausibly has an opinion on:
+
+- ✅ ASK: filter returns no rows ("you filter for high-priority — what if nothing's high-priority this week?"), lookup returns no match ("you look up vendor by ID — what if the ID isn't in the lookup table?"), required field blank ("the amount column is empty for a row — what do you do?"), value outside expected enum ("UPS_STATUS comes back as something other than your known statuses — what then?").
+- ❌ DO NOT ASK: anything that's really "what if the file/API/system/email/network fails." Even if it's framed as a business question, if the underlying cause is technical reliability, it's out of scope. Mark `exception_paths` `covered` when the only gap is a technical-reliability scenario.
 
 If the only gap in a rubric category is platform plumbing (e.g., `application_screen` for an email step where the system "Microsoft Graph API → Outlook mailbox" is known and only the tenant URL is unknown), mark it `covered`.
 

@@ -42,9 +42,9 @@ Header row stays as-is. The **one template row** below the header contains:
 
 | Application Name | Version | Application Language | Environment/Access | Comments |
 |---|---|---|---|---|
-| `{{app.name}}` | `{{app.version}}` | `{{app.language}}` | `{{app.environment}}` | `{{app.notes}}` |
+| `{{app.name}}` | (blank) | (blank) | `{{app.environment}}` | `{{app.notes}}` |
 
-Source: `Extracted.applications[]`. Any extra empty rows in the operator's original docx are removed during tokenization.
+Source: `Extracted.applications[]`. The Version and Application Language columns are intentionally not populated by this tool — those cells are blank in the template. Any extra empty rows in the operator's original docx are removed during tokenization.
 
 ## Section 6 — Known errors and exceptions (Table 5, repeating)
 

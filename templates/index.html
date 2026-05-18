@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Automation SDD Builder · Constellation Brands</title>
+  <title>Automation SDD Builder · Intelligent Automation and AI Team</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
@@ -13,14 +13,11 @@
   <header>
     <div class="brand">
       <span class="brand-mark" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M17.5 7a6.5 6.5 0 1 0 0 10" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
-          <circle cx="19.2" cy="5.6" r="1.4" fill="currentColor"/>
-        </svg>
+        <img src="/static/icon.png" alt="">
       </span>
       <div class="brand-text">
         <h1>Automation SDD Builder</h1>
-        <span class="brand-sub">Constellation Brands</span>
+        <span class="brand-sub">Intelligent Automation and AI Team</span>
       </div>
     </div>
     <button id="new-session-btn" type="button" title="Discard current session and start over">
@@ -34,7 +31,8 @@
 
   <main>
     <section class="input-pane">
-      <div class="style-toggle" id="style-toggle">
+      <!-- Drop-in mode is hidden while we stabilize the chat flow. -->
+      <div class="style-toggle" id="style-toggle" hidden>
         <button data-style="chat" class="active" type="button">Chat</button>
         <button data-style="drop_in" type="button">Drop-in</button>
       </div>
@@ -129,7 +127,7 @@
       </div>
       <div class="coverage">
         <div class="coverage-row">
-          <span>Coverage</span>
+          <span id="coverage-label">Coverage</span>
           <span id="coverage-pct">—</span>
         </div>
         <div class="coverage-bar"><div id="coverage-fill"></div></div>

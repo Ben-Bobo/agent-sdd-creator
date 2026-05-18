@@ -1,11 +1,16 @@
 """SDD generation orchestrator.
 
 Pipeline:
-  1. Ensure coverage is computed.
-  2. Run a narrative-enrichment pass (summary + tool_selection_rationale).
-  3. Generate the Mermaid applications diagram and render it to PNG.
-  4. Fill the docx template (embeds the PNG inline) and delete the PNG.
-  5. Persist session with phase = "generated".
+  1. (Chat mode only) Re-run extraction with ``MODEL_MAIN`` over the full
+     transcript. Per-turn extraction during chat uses ``MODEL_CHEAP`` for
+     speed; this pass restores full quality before any downstream
+     generation. Drop-in mode skips this because its initial extraction
+     already ran on ``MODEL_MAIN``.
+  2. Ensure coverage is computed.
+  3. Run a narrative-enrichment pass (summary + rerun + improvements + AI).
+  4. Generate the Mermaid applications diagram and render it to PNG.
+  5. Fill the docx template (embeds the PNG inline) and delete the PNG.
+  6. Persist session with phase = "generated".
 
 The only output exposed to the user is ``sdd.docx``. The diagram source
 and the PNG are intermediate artifacts and are not kept on disk.
@@ -24,24 +29,39 @@ from typing import Any
 from pydantic import BaseModel
 
 from . import session as session_store
+from .chat import _build_chat_context
 from .diagram import generate_mermaid, render_png
 from .docx_filler import fill_template
+from .extraction import extract_from_text
 from .gap_analysis import analyze as analyze_gaps
 from .llm import complete_json
 from .models import Coverage, Extracted, Session
 from .prompts import load_prompt
 
 
+class _StepDesignNote(BaseModel):
+    step_number: int
+    note: str
+
+
 class _Narrative(BaseModel):
     summary: str
     rerun_on_failure: str
     artificial_intelligence: list[str]
-    design_improvements: list[str]
+    step_design_notes: list[_StepDesignNote]
 
 
 def generate_sdd(session: Session) -> Iterator[tuple[str, Any]]:
     if session.extracted is None:
         raise ValueError("session.extracted is required before SDD generation")
+
+    # Chat-mode sessions: per-turn extraction used MODEL_CHEAP, so re-extract
+    # with the main model once before we build the final doc.
+    if session.input_style == "chat":
+        yield "status", "Final pass on your description"
+        session.extracted = extract_from_text(_build_chat_context(session))
+        # Coverage is derived from Extracted; recompute against the fresh one.
+        session.coverage = None
 
     if session.coverage is None:
         yield "status", "Running gap analysis"
@@ -52,7 +72,13 @@ def generate_sdd(session: Session) -> Iterator[tuple[str, Any]]:
     session.extracted.summary = narrative.summary
     session.extracted.rerun_on_failure = narrative.rerun_on_failure
     session.extracted.artificial_intelligence = narrative.artificial_intelligence
-    session.extracted.design_improvements = narrative.design_improvements
+
+    # Apply per-step design notes back onto the extracted steps. Unknown step
+    # numbers are ignored defensively (the LLM occasionally invents one).
+    notes_by_step = {n.step_number: n.note for n in narrative.step_design_notes}
+    for step in session.extracted.steps:
+        if step.number in notes_by_step and notes_by_step[step.number].strip():
+            step.design_note = notes_by_step[step.number].strip()
 
     session_dir = session_store.session_dir(session.session_id)
     session_dir.mkdir(parents=True, exist_ok=True)

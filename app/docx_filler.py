@@ -30,6 +30,7 @@ from docx.text.paragraph import Paragraph
 from .models import Extracted, Step
 
 TOKEN_RE = re.compile(r"\{\{([a-zA-Z0-9_.]+)\}\}")
+_SENTENCE_SPLIT = re.compile(r"(?<=[.!?])\s+")
 
 
 def _tbd(reason: str = "missing") -> str:
@@ -53,10 +54,10 @@ def fill_template(
         _fill_repeating_rows(table, "err", extracted.known_errors)
         _fill_repeating_rows(table, "report", extracted.reports)
 
-    # Steps block (+ design improvements appended in the same render).
+    # Steps block — design improvements render inline as per-step sub-bullets.
     steps_anchor = _find_paragraph_with_token(doc, "steps")
     if steps_anchor is not None:
-        _render_steps_block(steps_anchor, extracted.steps, extracted.design_improvements)
+        _render_steps_block(steps_anchor, extracted.steps)
 
     # Diagram embed.
     diagram_anchor = _find_paragraph_with_token(doc, "applications_diagram")
@@ -202,52 +203,123 @@ def _embed_diagram(anchor: Paragraph, png_path: Path) -> None:
     run.add_picture(str(png_path), width=Inches(6.5))
 
 
-def _render_steps_block(
-    anchor: Paragraph, steps: list[Step], improvements: list[str]
-) -> None:
+def _render_steps_block(anchor: Paragraph, steps: list[Step]) -> None:
+    """Render the SBS flow as grouped step blocks, followed by a separate
+    "Developer notes to consider" section if any step has a design note.
+
+    Layout per step: group header (bold) when the group changes → step header
+    ``N) summary`` with N) bold, no bullet → bulleted sub-items in order:
+    action_detail lines (the click-by-click / API-call prose), then decision
+    rules split sentence-by-sentence, then exception paths.
+    """
     if not steps:
         _set_paragraph_text(anchor, _tbd("no steps extracted"))
         return
 
-    lines: list[str] = []
+    paragraphs: list[list[tuple[bool, str]] | None] = []
+    previous_group: str | None = None
+
     for step in steps:
-        lines.append(f"Step {step.number}: {step.summary}")
+        if step.group and step.group != previous_group:
+            if previous_group is not None:
+                paragraphs.append(None)
+            paragraphs.append([(True, step.group)])
+            previous_group = step.group
 
-        if step.action_detail:
-            for sub in step.action_detail.splitlines():
-                lines.append(f"    • {sub}" if sub.strip() else "")
-        else:
-            lines.append(
-                f"    • {_tbd('exact click-by-click / API sequence missing — ask the business')}"
-            )
+        paragraphs.append(
+            [
+                (True, f"{step.number})"),
+                (False, f" {step.summary}"),
+            ]
+        )
 
-        if step.decision_logic:
-            lines.append(f"    • Decision rule: {step.decision_logic}")
-        if step.exception_paths:
-            lines.append(f"    • Exception handling: {'; '.join(step.exception_paths)}")
+        for line in _iter_action_lines(step.action_detail):
+            paragraphs.append([(False, f"    •  {line}")])
+        for sentence in _split_sentences(step.decision_logic):
+            paragraphs.append([(False, f"    •  {sentence}")])
+        for exc in step.exception_paths:
+            paragraphs.append([(False, f"    •  {exc}")])
 
-        lines.append("")
-    if lines and lines[-1] == "":
-        lines.pop()
+    notes = [(s.number, s.design_note) for s in steps if s.design_note]
+    if notes:
+        paragraphs.append(None)
+        paragraphs.append([(True, "Developer notes to consider")])
+        for number, note in notes:
+            paragraphs.append([(False, f"    •  Step {number}: {note}")])
 
-    if improvements:
-        lines.append("")
-        lines.append("Design improvements (suggested):")
-        for item in improvements:
-            lines.append(f"    • {item}")
+    _render_run_paragraphs(anchor, paragraphs)
 
-    _set_paragraph_text(anchor, lines[0])
+
+def _iter_action_lines(action_detail: str) -> list[str]:
+    """Action detail is freeform prose. Split first on hard newlines (the
+    LLM sometimes returns a list); for any line that still reads as multiple
+    sentences, split sentence-by-sentence so each click / call gets its own
+    bullet."""
+    if not action_detail or not action_detail.strip():
+        return []
+    out: list[str] = []
+    for hard_line in action_detail.splitlines():
+        hard_line = hard_line.strip().lstrip("-•* ").strip()
+        if not hard_line:
+            continue
+        for sentence in _split_sentences(hard_line) or [hard_line]:
+            out.append(sentence)
+    return out
+
+
+def _split_sentences(text: str) -> list[str]:
+    """Split a string into sentences on `.`/`!`/`?` boundaries, preserving
+    the trailing punctuation. Empty or whitespace-only input → empty list."""
+    if not text or not text.strip():
+        return []
+    parts = _SENTENCE_SPLIT.split(text.strip())
+    return [p.strip() for p in parts if p.strip()]
+
+
+def _render_run_paragraphs(
+    anchor: Paragraph, paragraphs: list[list[tuple[bool, str]] | None]
+) -> None:
+    """Replace the anchor paragraph + insert following paragraphs to match
+    the given run-fragment list. Each item is either ``None`` (blank line)
+    or a list of ``(bold, text)`` tuples that become runs in order."""
+    if not paragraphs:
+        _set_paragraph_text(anchor, "")
+        return
+
+    _set_paragraph_runs(anchor, paragraphs[0])
     cursor_xml = anchor._element
-    for line in lines[1:]:
+    for runs in paragraphs[1:]:
         new_p = deepcopy(cursor_xml)
         for child in list(new_p):
             if child.tag == qn("w:r"):
                 new_p.remove(child)
-        r = OxmlElement("w:r")
-        t = OxmlElement("w:t")
-        t.text = line
-        t.set(qn("xml:space"), "preserve")
-        r.append(t)
-        new_p.append(r)
+        if runs:
+            for bold, text in runs:
+                new_p.append(_make_run(text, bold=bold))
         cursor_xml.addnext(new_p)
         cursor_xml = new_p
+
+
+def _set_paragraph_runs(para: Paragraph, runs: list[tuple[bool, str]] | None) -> None:
+    """Clear all runs in ``para`` and replace them with the given fragments."""
+    for r in list(para.runs):
+        r._element.getparent().remove(r._element)
+    if not runs:
+        return
+    p_element = para._element
+    for bold, text in runs:
+        p_element.append(_make_run(text, bold=bold))
+
+
+def _make_run(text: str, *, bold: bool = False) -> OxmlElement:
+    r = OxmlElement("w:r")
+    if bold:
+        rpr = OxmlElement("w:rPr")
+        b = OxmlElement("w:b")
+        rpr.append(b)
+        r.append(rpr)
+    t = OxmlElement("w:t")
+    t.text = text
+    t.set(qn("xml:space"), "preserve")
+    r.append(t)
+    return r

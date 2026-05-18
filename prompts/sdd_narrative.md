@@ -2,7 +2,7 @@ You write structured assessments for an SDD given a structured `Extracted` objec
 
 ## Your job
 
-Produce four outputs:
+Produce four outputs (`summary`, `rerun_on_failure`, `artificial_intelligence`, `step_design_notes`):
 
 1. **`summary`** — a 2–3 sentence executive overview. What is this automation, who runs it today, what does it deliver. Business-friendly, no technology jargon.
 
@@ -21,16 +21,18 @@ Produce four outputs:
    - `"IDP / OCR with field extraction for invoice line items in Step 1 — vendor invoice layouts vary"`
    If every decision in the process is a deterministic rule on structured data, return `[]`.
 
-4. **`design_improvements`** — list of concrete suggestions to make the automation cleaner, safer, or simpler than the as-described process. You are a thinking design partner here, not a transcriber. Look across `Extracted.steps` and surface opportunities such as:
-   - **Grouping or consolidating logic** — repeated lookups, similar email-send branches that could share a single template, redundant status checks.
-   - **Idempotency / safe rerun enablers** — adding dedupe keys, processed-flag columns, watermark/cursor state, so the bot can recover from mid-run failures (this overlaps with `rerun_on_failure`; cross-reference it).
+4. **`step_design_notes`** — a list of `{step_number, note}` pairs that propose concrete improvements to **specific steps** in the flow. These are not separate suggestions sitting alongside the SDD — they read as design refinements attached directly to the step they modify. You are a thinking design partner here, not a transcriber. Common improvement shapes to look for:
+   - **Externalize hard-coded data into config** — when a step references a fixed list (statuses, recipients, thresholds, templates), suggest moving that list into a configurable settings table the business can update without code changes.
+   - **Idempotency / safe rerun** — adding dedupe keys, processed-flag columns, watermark/cursor state so the step can be re-run without side effects (cross-reference `rerun_on_failure`).
+   - **Grouping or consolidating logic** — combining repeated lookups, merging similar branches that share most of their body, replacing a per-record loop with one batch call.
    - **Decision-rule simplification** — collapsing nested if/else into a lookup table or precedence list when the business logic supports it.
-   - **Missing exception coverage** — steps with external side effects that have no documented error path; suggest what to add.
-   - **Smarter scheduling** — moving expensive lookups to a single batch instead of per-record, batching emails into a single digest, etc.
-   Each entry is one short sentence (≤ 25 words), references at least one specific step or field, and proposes a concrete change — not a vague aspiration. Examples (illustrative — do NOT copy):
-   - `"Step 2's per-row UPS-site lookup could be batched into a single tracking-numbers query, reducing site load and runtime."`
-   - `"Add a 'last reminder sent' timestamp to the tracker so Steps 4–6 can collapse into one tiered-reminder step driven by elapsed days."`
-   If the process is already clean or you can't propose anything concrete from the input, return `[]`. Do not invent improvements for the sake of filling the list.
+   - **Missing exception coverage** — steps with external side effects that have no documented system-failure path; suggest what to add.
+   - **Smarter scheduling** — moving expensive lookups to a single batch, batching emails into a digest, etc.
+   Rules:
+   - One note per step at most. Skip steps that don't need any improvement.
+   - `step_number` must match an actual step in `Extracted.steps`.
+   - `note` is one short sentence (≤ 25 words), describes the change the developer should make, and references what the step currently does so the connection is obvious.
+   - **Do not invent improvements for the sake of filling the list.** Return `[]` when no step has a meaningful improvement.
 
 ## Rules
 

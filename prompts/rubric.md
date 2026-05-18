@@ -9,8 +9,8 @@ For each step in the process, a developer needs to know **all of**:
 | `action` | The exact UI action (which button, dropdown value, field) **or** the API endpoint/method if available. |
 | `data_inputs` | What data is required, where it comes from, and the format (PDF, JSON, free text, etc.). |
 | `data_outputs` | What data is produced and where it goes (DB row, file, downstream system). |
-| `decision_logic` | Any conditional rule. Must capture the **exact condition and threshold** ("if amount > $5,000, route to manager"), not a paraphrase. |
-| `exception_paths` | What happens on failure: system down, data missing, action fails, user denies, etc. |
+| `decision_logic` | **Business branches** in the normal flow — value-based or count-based forks the process takes deliberately. Must capture the exact condition and threshold ("if amount > $5,000, route to manager"; "if zero matching emails, send alert and stop"). A branch belongs here even if one arm is a no-op or alert. |
+| `exception_paths` | **Business process branches for data-state variability** — what the process should do when expected data is missing, empty, or unmatched. Examples: filter returns no rows, lookup finds no match, required field blank on an input row, value is outside an expected enum. **Out of scope** (do NOT include): file corrupt, API/HTTP/library failures, network errors, system downtime, attachment unreadable, email send failed, token refresh — these are developer-handled reliability concerns. Score `covered` if no business-side data-variability branches apply to the step. If a scenario is captured under `decision_logic`, do not repeat it here. |
 | `success_criterion` | How the developer / bot knows the step worked. |
 
 For the **process overall**, also required:

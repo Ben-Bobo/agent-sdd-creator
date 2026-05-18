@@ -23,13 +23,15 @@ class _CoverageLLM(BaseModel):
     items: list[CoverageItem]
 
 
-def analyze(extracted: Extracted) -> Coverage:
+def analyze(extracted: Extracted, model: str | None = None) -> Coverage:
+    """Run gap analysis. ``model`` defaults to ``MODEL_MAIN``; pass
+    ``MODEL_CHEAP`` for per-turn background passes during chat."""
     system = load_prompt("gap_analysis") + "\n\n" + load_prompt("rubric")
     raw = complete_json(
         system=system,
         messages=[{"role": "user", "content": extracted.model_dump_json(indent=2)}],
         schema=_CoverageLLM,
-        model=os.environ["MODEL_MAIN"],
+        model=model or os.environ["MODEL_MAIN"],
         max_tokens=8192,
     )
     return _with_recomputed_totals(raw.items)

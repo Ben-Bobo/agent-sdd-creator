@@ -143,6 +143,14 @@ async def chat(session_id: str, body: ChatRequest) -> StreamingResponse:
         final = {
             "phase": session.phase,
             "coverage_pct": (session.coverage.overall_pct if session.coverage else None),
+            "clarification_progress": (
+                {
+                    "position": session.clarification_position,
+                    "total": len(session.clarification_cursor),
+                }
+                if session.clarification_cursor
+                else None
+            ),
         }
         yield f"event: done\ndata: {json.dumps(final)}\n\n"
 

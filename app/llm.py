@@ -3,11 +3,16 @@
 Model strings include a provider prefix (e.g. ``anthropic/...``,
 ``openai/...``). Code references semantic roles (``MODEL_MAIN`` /
 ``MODEL_CHEAP``) via env, never hardcoded model strings.
+
+The system prompt is marked as cacheable on every call. On Anthropic this
+gives a ~90% discount on the cached prefix (5-min TTL). LiteLLM strips
+the marker for providers that don't support it; OpenAI's automatic prefix
+caching kicks in regardless.
 """
 
 from __future__ import annotations
 
-import json
+import os
 import sys
 from collections.abc import AsyncIterator
 from typing import TypeVar
@@ -20,12 +25,42 @@ T = TypeVar("T", bound=BaseModel)
 litellm.suppress_debug_info = True
 
 
+def _cached_system(text: str) -> list[dict]:
+    """System message content with an Anthropic cache breakpoint at the end.
+
+    Anthropic caches the prefix up to and including this block (5-min TTL).
+    Per-call ``messages`` after it stay un-cached and get reprocessed each
+    time, which is what we want — the system prompt + schema is static,
+    the user turn is not.
+    """
+    return [{"type": "text", "text": text, "cache_control": {"type": "ephemeral"}}]
+
+
+def _log_usage(resp) -> None:
+    """Print cached-vs-uncached input tokens to stderr when LLM_LOG_USAGE=1.
+
+    Useful for confirming a caching change is actually firing. Off by default
+    to keep normal runs quiet.
+    """
+    if os.environ.get("LLM_LOG_USAGE") != "1":
+        return
+    usage = getattr(resp, "usage", None)
+    if usage is None:
+        return
+    details = getattr(usage, "prompt_tokens_details", None)
+    cached = getattr(details, "cached_tokens", 0) if details else 0
+    total_in = getattr(usage, "prompt_tokens", 0)
+    total_out = getattr(usage, "completion_tokens", 0)
+    sys.stderr.write(f"[llm] in={total_in} (cached={cached}) out={total_out}\n")
+
+
 def complete(system: str, messages: list[dict], model: str, max_tokens: int = 4096) -> str:
     resp = litellm.completion(
         model=model,
-        messages=[{"role": "system", "content": system}] + messages,
+        messages=[{"role": "system", "content": _cached_system(system)}] + messages,
         max_tokens=max_tokens,
     )
+    _log_usage(resp)
     return resp.choices[0].message.content
 
 
@@ -38,18 +73,27 @@ def complete_json(
     max_retries: int = 2,
 ) -> T:
     """Ask the model for strict JSON and parse it against `schema`.
-    Retry on validation failure with a feedback turn."""
-    schema_json = json.dumps(schema.model_json_schema(), indent=2)
-    system_with_schema = (
-        f"{system}\n\n"
-        f"Respond with ONLY valid JSON matching this schema. "
-        f"No markdown fences, no commentary.\n\n"
-        f"Schema:\n{schema_json}"
-    )
+
+    Uses the provider's native structured-output mode via LiteLLM:
+    OpenAI → ``response_format`` with json_schema (strict), Anthropic →
+    forced tool-call. Schema conformance is enforced by the API where
+    supported, so the retry loop below is belt-and-suspenders for
+    fallback providers and the occasional partial-validation edge case
+    that Pydantic catches but the API didn't.
+    """
     conv = list(messages)
     last_error: Exception | None = None
     for attempt in range(max_retries + 1):
-        raw = complete(system_with_schema, conv, model, max_tokens)
+        resp = litellm.completion(
+            model=model,
+            messages=[{"role": "system", "content": _cached_system(system)}] + conv,
+            max_tokens=max_tokens,
+            response_format=schema,
+        )
+        _log_usage(resp)
+        raw = resp.choices[0].message.content
+        # Defensive: native mode returns raw JSON, but fallback providers
+        # occasionally wrap in markdown fences.
         cleaned = (
             raw.strip().removeprefix("```json").removeprefix("```").removesuffix("```").strip()
         )
@@ -74,7 +118,7 @@ async def stream(
 ) -> AsyncIterator[str]:
     resp = await litellm.acompletion(
         model=model,
-        messages=[{"role": "system", "content": system}] + messages,
+        messages=[{"role": "system", "content": _cached_system(system)}] + messages,
         max_tokens=max_tokens,
         stream=True,
     )

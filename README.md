@@ -1,23 +1,17 @@
 # Automation SDD Builder
 
-Turn fuzzy business descriptions of a process into developer-ready specs. Drop in a meeting transcript or have a guided chat, and the app produces either a **Technology Fit Report** (should we automate this, and how?) or a fully filled **Software Design Document** matching your Word template — with an embedded applications diagram and a separate `gaps.md` of focused follow-up questions for the business.
+Turn fuzzy business descriptions of a process into a developer-ready spec. Drop in a meeting transcript or have a guided chat, and the app produces a fully filled **Software Design Document** matching your Word template — with the applications diagram embedded inline.
 
 Built for the in-between work an automation analyst does every day: translating business hand-waving into something a Blue Prism / Power Automate / SAP BTP developer can actually build from.
 
-## What you get
-
-See [`examples/sample_output/`](examples/sample_output/) for real, unedited runs:
-- **SDD mode**, drop-in input → [`sdd_invoice_processing/`](examples/sample_output/sdd_invoice_processing/): a `.docx` filled from your template, a PNG applications diagram, the Mermaid source, and a `gaps.md` listing every step-level detail the tool wasn't confident about.
-- **Technology Fit mode**, vague three-line email → [`technology_fit_vague_request/`](examples/sample_output/technology_fit_vague_request/): a markdown recommendation that, in this case, refuses to commit and tells you what conversation has to happen first.
-
 ## Features
 
-- **Two output modes:** Technology Fit recommendation (markdown) or full SDD (`.docx` matching your template).
 - **Two input styles:** drop in a transcript / email / paste / file upload, or run a guided chat that asks one focused question at a time.
-- **Gap analysis pass** — every generation pre-scores the input against a developer-readiness rubric and produces a `gaps.md` of targeted questions the business can actually answer (no platform jargon).
-- **Applications diagram** — generated as Mermaid, rendered to PNG with the Mermaid CLI, embedded inline in the SDD. `.mmd` source ships alongside for later editing.
+- **One output:** a `.docx` filled from your template, with the Mermaid applications diagram rendered and embedded inline.
+- **Coverage-driven chat** — every chat turn scores the conversation-so-far against a developer-readiness rubric, drives the next clarifier question, and unlocks the Generate button once the coverage threshold is met.
+- **Smart re-extraction** — acknowledgment-only turns ("ok", "yes") skip the expensive extraction pass via a cheap Haiku classifier, so a long chat stays affordable.
 - **Bring your own template** — the `.docx` template is the source of truth. Tokenize once in Word and the filler clones rows for applications / errors / reports, embeds the diagram, and renders the step-by-step flow.
-- **Provider-agnostic LLM access** via [LiteLLM](https://docs.litellm.ai). Anthropic API today; any OpenAI-compatible corporate gateway later by editing `.env` — no code changes.
+- **Provider-agnostic LLM access** via [LiteLLM](https://docs.litellm.ai). Anthropic API today (with prompt caching enabled for ~90% off the repeated system prompt); any OpenAI-compatible corporate gateway later by editing `.env` — no code changes.
 
 ## Architecture
 
@@ -29,7 +23,7 @@ flowchart LR
     subgraph App[FastAPI app]
         Routes[HTTP routes<br/>session / dropin / intake<br/>chat / coverage / generate / download]
         Chat[chat state machine]
-        Gen[sdd_generator / technology_fit]
+        Gen[sdd_generator]
         Extract[extraction + gap analysis]
         Filler[docx_filler]
         Diagram[diagram → Mermaid CLI]
@@ -75,19 +69,17 @@ uvicorn app.main:app --reload
 # Visit http://127.0.0.1:8000/
 ```
 
-If you have `make`, the equivalents are `make install`, `make run`. Other targets: `make test`, `make test-live`, `make format`, `make lint`, `make check`.
+If you have `make`, the equivalents are `make install`, `make run`. Other targets: `make format`, `make lint`, `make check`.
 
 ## Bringing your own SDD template
 
 `templates/Automation_SDD_template.docx` is the docx the generator fills. It's already tokenized to match the included sample. To use your own template instead:
 
 1. Save your starting docx somewhere outside `templates/` (e.g. the repo root).
-2. Run `python scripts/prepare_template.py` to print the list of `{{tokens}}` and where each one belongs. (This script prints guidance — it doesn't modify your docx.)
+2. Open [`prompts/template_tokens.md`](prompts/template_tokens.md) for the full list of `{{tokens}}` and where each one belongs.
 3. In Word, paste each token into the matching cell. For the Applications, Errors, and Reports tables, keep one template data row with the `{{prefix.field}}` tokens; delete any extra empty rows (the filler clones the template row once per item).
 4. Add a paragraph containing `{{applications_diagram}}` where the diagram should go, and a paragraph containing `{{steps}}` where the step-by-step flow should go.
-5. Save the tokenized result to `templates/Automation_SDD_template.docx`.
-
-Token names and locations are documented in [`prompts/template_tokens.md`](prompts/template_tokens.md).
+5. Save the tokenized result to `templates/Automation_SDD_template.docx` (or point `TEMPLATE_PATH` in `.env` somewhere else).
 
 ## Using a different LLM backend
 
@@ -113,19 +105,15 @@ app/                 FastAPI app + orchestration modules
   extraction.py      raw text → Extracted (Pydantic)
   gap_analysis.py    Extracted → Coverage (rubric-scored, with questions)
   sdd_generator.py   end-to-end SDD pipeline
-  technology_fit.py  Tech Fit markdown report generator
   diagram.py         Mermaid generation + mmdc render
   docx_filler.py     template token replacement + repeating rows + diagram embed
-  llm.py             LiteLLM wrapper: complete / complete_json / stream
+  llm.py             LiteLLM wrapper with Anthropic prompt caching baked in
   models.py          Pydantic schemas for Session, Extracted, Coverage, Intake, etc.
   session.py         JSON-on-disk session store
   prompts.py         prompt file loader
 prompts/             All LLM prompts as .md files — iterate without touching code
 templates/           Word template + Jinja templates for the UI
 static/              CSS + vanilla JS for the single-page UI
-evals/               pytest live tests + fixtures
-scripts/             one-off CLI helpers (env check, smoke tests, template guide)
-examples/            sample outputs visitors can browse without running the app
 sessions/            generated at runtime; one folder per session, JSON state + artifacts
 ```
 
@@ -145,11 +133,8 @@ sessions/            generated at runtime; one folder per session, JSON state + 
 - Real DB instead of JSON files
 - Audio/video transcription input
 - Refinement of generated docx via additional chat ("change step 3 to…")
-- Better evals + a small benchmark suite
 - Platform-specific output adapters (Blue Prism object skeletons, Power Automate flow JSON)
-
-See [`spec.md`](spec.md) for the full design and [`tasks.md`](tasks.md) for the ticket plan that produced v1.
 
 ## Built with
 
-[FastAPI](https://fastapi.tiangolo.com/) · [LiteLLM](https://docs.litellm.ai) · [Pydantic](https://docs.pydantic.dev) · [python-docx](https://python-docx.readthedocs.io) · [Mermaid CLI](https://github.com/mermaid-js/mermaid-cli) · [HTMX](https://htmx.org/) (loaded but kept minimal — the UI is mostly plain JS + SSE).
+[FastAPI](https://fastapi.tiangolo.com/) · [LiteLLM](https://docs.litellm.ai) · [Pydantic](https://docs.pydantic.dev) · [python-docx](https://python-docx.readthedocs.io) · [Mermaid CLI](https://github.com/mermaid-js/mermaid-cli). UI is plain HTML + CSS + vanilla JS with SSE — no framework, no build step.

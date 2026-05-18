@@ -12,7 +12,6 @@ Conventions:
 | Cell label | Token | Source |
 |---|---|---|
 | Project Name | `{{project_name}}` | `Extracted.project_name` |
-| Flow Diagrams Location | `{{flow_diagrams_location}}` | (not extracted — defaults to TBD) |
 | Jira Project # | `{{jira_project}}` | (not extracted — defaults to TBD) |
 
 ## Section 2 — Automation toolset (Table 1)
@@ -23,12 +22,12 @@ Conventions:
 | BTP Services | `{{btp_services}}` | `Extracted.btp_services[]` |
 | Document Processing | `{{document_processing}}` | `Extracted.document_processing[]` |
 | New SDKs/Objects | `{{new_sdks_objects}}` | `Extracted.new_sdks_objects[]` |
-| Artificial Intelligence | `{{artificial_intelligence}}` | `Extracted.artificial_intelligence[]` |
+| Artificial Intelligence | `{{artificial_intelligence}}` | `Extracted.artificial_intelligence[]` (set by narrative pass; usually `[]`) |
 | Credential Management | `{{credential_management}}` | `Extracted.credential_management` |
 
 ## Section 3 — Tool selection rationale (Table 2)
 
-Free-text cell, replace its content with `{{tool_selection_rationale}}`.
+Free-text cell, replace its content with `{{tool_selection_rationale}}`. No longer auto-generated — renders as `[TBD - populate manually]`.
 
 ## Section 4 — Project posture (Table 3)
 
@@ -60,7 +59,7 @@ Source: `Extracted.known_errors[]`.
 | Cell label | Token | Source |
 |---|---|---|
 | Accepted failure threshold | `{{accepted_failure_threshold}}` | `Extracted.accepted_failure_threshold` |
-| Rerun on failure steps | `{{rerun_on_failure}}` | `Extracted.rerun_on_failure` |
+| Rerun on failure steps | `{{rerun_on_failure}}` | `Extracted.rerun_on_failure` (set by narrative pass — yes/no with reason) |
 
 ## Section 8 — Scheduling and triggers (Table 7)
 
@@ -92,11 +91,10 @@ Step 1: <step.summary>
     Action: <action_detail>
     Inputs: <data_inputs joined>
     Outputs: <data_outputs joined>
-    Decision: <decision_logic>
-    Exceptions: <exception_paths joined>
-    Success: <success_criterion>
+    Decision rule: <decision_logic>
+    Exception handling: <exception_paths joined>
 ```
 
-Detail lines are omitted when the corresponding `Step` field is empty.
+Detail lines are omitted when the corresponding `Step` field is empty. `success_criterion` is no longer rendered (the step's logic above makes "done" obvious).
 
 Source: `Extracted.steps[]`.

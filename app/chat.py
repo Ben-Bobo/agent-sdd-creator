@@ -2,9 +2,11 @@
 
 Phases: intake -> narrative -> clarification -> ready_to_generate -> generated.
 
-After each user turn we re-extract on (intake + transcript) and re-run gap
-analysis, so the coverage indicator updates in real time. That is intentionally
-expensive — fine for v1, optimize later.
+After each user turn we *may* re-extract on (intake + transcript) and re-run
+gap analysis so the coverage indicator stays current. To avoid paying for
+that on acknowledgement-only turns ("ok", "yes", "no nothing else"), a cheap
+Haiku classifier first judges whether the reply added new process detail.
+If not, we reuse the previous Extracted + Coverage unchanged.
 """
 
 from __future__ import annotations
@@ -68,12 +70,17 @@ def handle_intake(session: Session, intake_data: Intake) -> None:
     session_store.save_session(session)
 
 
-async def handle_turn(session: Session, user_message: str) -> AsyncIterator[str]:
-    """Process a user turn and yield assistant response chunks (for SSE)."""
+async def handle_turn(session: Session, user_message: str) -> AsyncIterator[tuple[str, str]]:
+    """Process a user turn. Yields ``(kind, payload)`` tuples where ``kind``
+    is ``"status"`` (a short label of the current backend step, for the UI)
+    or ``"content"`` (an assistant text chunk to append to the response)."""
     session.transcript.append(ChatMessage(role="user", content=user_message, ts=_now()))
 
-    session.extracted = extract_from_text(_build_chat_context(session))
-    session.coverage = analyze_gaps(session.extracted)
+    if _has_new_detail(session.transcript):
+        yield "status", "Re-extracting from transcript"
+        session.extracted = extract_from_text(_build_chat_context(session))
+        yield "status", "Updating gap analysis"
+        session.coverage = analyze_gaps(session.extracted)
 
     if session.phase == "narrative":
         if _is_explicit_done(user_message) or _classify_user_done(session.transcript):
@@ -87,12 +94,13 @@ async def handle_turn(session: Session, user_message: str) -> AsyncIterator[str]
     if session.phase == "narrative":
         assistant_text = NARRATIVE_ACK
         for word in _word_chunks(NARRATIVE_ACK):
-            yield word
+            yield "content", word
     elif session.phase == "ready_to_generate":
         assistant_text = READY_MESSAGE
         for word in _word_chunks(READY_MESSAGE):
-            yield word
+            yield "content", word
     elif session.phase == "clarification":
+        yield "status", "Drafting next question"
         system = load_prompt("system_chat") + "\n\n---\n\n" + load_prompt("clarifier_question")
         context_body = _build_clarifier_context(session)
         async for chunk in stream(
@@ -102,7 +110,7 @@ async def handle_turn(session: Session, user_message: str) -> AsyncIterator[str]
             max_tokens=300,
         ):
             assistant_text += chunk
-            yield chunk
+            yield "content", chunk
         assistant_text = assistant_text.strip()
 
     session.transcript.append(ChatMessage(role="assistant", content=assistant_text, ts=_now()))
@@ -129,6 +137,29 @@ def _classify_user_done(transcript: list[ChatMessage]) -> bool:
         max_tokens=4,
     )
     return result.strip().lower().startswith("y")
+
+
+def _has_new_detail(transcript: list[ChatMessage]) -> bool:
+    """Cheap classifier: did the user's last turn add process info worth
+    re-extracting on? Defaults to True when there's no prior assistant turn
+    to anchor the judgment against."""
+    if not transcript or transcript[-1].role != "user":
+        return True
+    last_user = transcript[-1].content
+    prior_assistant = next(
+        (m.content for m in reversed(transcript[:-1]) if m.role == "assistant"),
+        None,
+    )
+    if prior_assistant is None:
+        return True
+    body = f"assistant: {prior_assistant}\nuser: {last_user}"
+    result = complete(
+        system=load_prompt("has_new_detail"),
+        messages=[{"role": "user", "content": body}],
+        model=os.environ["MODEL_CHEAP"],
+        max_tokens=4,
+    )
+    return not result.strip().lower().startswith("n")
 
 
 def _format_trigger(intake: Intake) -> str | None:

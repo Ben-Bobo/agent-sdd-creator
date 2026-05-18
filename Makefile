@@ -9,14 +9,12 @@ else
   ACTIVATE_HINT := source .venv/bin/activate
 endif
 
-.PHONY: help install run test test-live format lint check
+.PHONY: help install run format lint check
 
 help:
 	@echo "Targets:"
 	@echo "  install    Install runtime + dev deps into .venv (requires: uv venv)"
 	@echo "  run        Start the dev server on http://127.0.0.1:8000"
-	@echo "  test       Run the default test suite (skips live LLM tests)"
-	@echo "  test-live  Run live tests that hit the real LLM (costs a few cents)"
 	@echo "  format     Format code with ruff"
 	@echo "  lint       Lint with ruff (no fixes applied)"
 	@echo "  check      Lint + format-check; fails if anything would change"
@@ -29,19 +27,13 @@ install:
 run:
 	$(VENV_PY) -m uvicorn app.main:app --reload
 
-test:
-	$(VENV_PY) -m pytest
-
-test-live:
-	$(VENV_PY) -m pytest -m live
-
 format:
-	$(VENV_PY) -m ruff format app scripts evals
-	$(VENV_PY) -m ruff check --fix app scripts evals
+	$(VENV_PY) -m ruff format app
+	$(VENV_PY) -m ruff check --fix app
 
 lint:
-	$(VENV_PY) -m ruff check app scripts evals
+	$(VENV_PY) -m ruff check app
 
 check:
-	$(VENV_PY) -m ruff check app scripts evals
-	$(VENV_PY) -m ruff format --check app scripts evals
+	$(VENV_PY) -m ruff check app
+	$(VENV_PY) -m ruff format --check app

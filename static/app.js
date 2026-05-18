@@ -4,7 +4,6 @@ const SESSION_KEY = "sdd_session_id";
 
 const state = {
   sessionId: localStorage.getItem(SESSION_KEY),
-  mode: "sdd_builder",
   inputStyle: "chat",
   phase: null,
   coveragePct: null,
@@ -57,19 +56,14 @@ function showPanels() {
   chatInput.hidden = inIntake || state.phase === "generated";
 }
 
-function applyModeStyleButtons() {
-  $$("#mode-toggle button").forEach((b) =>
-    b.classList.toggle("active", b.dataset.mode === state.mode)
-  );
+function applyStyleButtons() {
   $$("#style-toggle button").forEach((b) =>
     b.classList.toggle("active", b.dataset.style === state.inputStyle)
   );
 }
 
 function lockSelectors(locked) {
-  $$("#mode-toggle button, #style-toggle button").forEach(
-    (b) => (b.disabled = locked)
-  );
+  $$("#style-toggle button").forEach((b) => (b.disabled = locked));
 }
 
 function addBubble(role, text) {
@@ -89,14 +83,24 @@ function addBubble(role, text) {
   return body;
 }
 
+const DOWNLOAD_ICON_SVG =
+  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+  '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>' +
+  '<polyline points="7 10 12 15 17 10"/>' +
+  '<line x1="12" y1="15" x2="12" y2="3"/>' +
+  "</svg>";
+
 function renderArtifacts(files) {
   const container = $("#artifacts");
   container.innerHTML = "";
   for (const f of files) {
     const a = document.createElement("a");
     a.href = `/api/download/${state.sessionId}/${encodeURIComponent(f)}`;
-    a.textContent = f;
     a.setAttribute("download", f);
+    a.insertAdjacentHTML("beforeend", DOWNLOAD_ICON_SVG);
+    const label = document.createElement("span");
+    label.textContent = f;
+    a.appendChild(label);
     container.appendChild(a);
   }
 }
@@ -107,11 +111,10 @@ async function ensureSession() {
       const r = await fetch(`/api/session/${state.sessionId}`);
       if (r.ok) {
         const s = await r.json();
-        state.mode = s.mode;
         state.inputStyle = s.input_style;
         setPhase(s.phase);
         setCoverage(s.coverage ? s.coverage.overall_pct : null);
-        applyModeStyleButtons();
+        applyStyleButtons();
         lockSelectors(true);
         showPanels();
         for (const msg of s.transcript || []) addBubble(msg.role, msg.content);
@@ -125,7 +128,7 @@ async function ensureSession() {
     localStorage.removeItem(SESSION_KEY);
     state.sessionId = null;
   }
-  applyModeStyleButtons();
+  applyStyleButtons();
   showPanels();
   setPhase("intake");
 }
@@ -135,7 +138,7 @@ async function createSessionIfNeeded() {
   const r = await fetch("/api/session", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ mode: state.mode, input_style: state.inputStyle }),
+    body: JSON.stringify({ input_style: state.inputStyle }),
   });
   if (!r.ok) throw new Error("Failed to create session");
   const j = await r.json();
@@ -220,7 +223,11 @@ async function sendChat(ev) {
   form.querySelector("button").disabled = true;
   addBubble("user", message);
   const bodySpan = addBubble("assistant", "");
-  setStatus("Thinking…");
+  showThinking(bodySpan, "Thinking");
+  setStatus("");
+
+  // Track whether we've started receiving real content yet.
+  const chatState = { receivingContent: false };
 
   try {
     const r = await fetch(`/api/chat/${state.sessionId}`, {
@@ -241,11 +248,12 @@ async function sendChat(ev) {
       while ((idx = buffer.indexOf("\n\n")) >= 0) {
         const block = buffer.slice(0, idx);
         buffer = buffer.slice(idx + 2);
-        handleSseBlock(block, bodySpan);
+        handleChatSseBlock(block, bodySpan, chatState);
       }
     }
-    setStatus("");
+    clearThinking(bodySpan);
   } catch (e) {
+    clearThinking(bodySpan);
     setStatus("Chat failed: " + e.message);
   } finally {
     form.querySelector("button").disabled = false;
@@ -253,7 +261,16 @@ async function sendChat(ev) {
   }
 }
 
-function handleSseBlock(block, bodySpan) {
+function showThinking(bodySpan, label) {
+  bodySpan.textContent = label;
+  bodySpan.classList.add("thinking");
+}
+
+function clearThinking(bodySpan) {
+  bodySpan.classList.remove("thinking");
+}
+
+function handleChatSseBlock(block, bodySpan, chatState) {
   let evType = null;
   let dataLine = null;
   for (const line of block.split("\n")) {
@@ -272,7 +289,18 @@ function handleSseBlock(block, bodySpan) {
     if (obj.coverage_pct !== null && obj.coverage_pct !== undefined)
       setCoverage(obj.coverage_pct);
     showPanels();
+  } else if (evType === "status") {
+    if (!chatState.receivingContent)
+      showThinking(bodySpan, obj.text || "Working");
   } else {
+    // First content chunk: drop the thinking placeholder before appending.
+    // Defensive: always clear if .thinking class is set, even if we somehow
+    // missed flipping receivingContent.
+    if (!chatState.receivingContent || bodySpan.classList.contains("thinking")) {
+      chatState.receivingContent = true;
+      clearThinking(bodySpan);
+      bodySpan.textContent = "";
+    }
     bodySpan.textContent += obj.text || "";
     $("#chat-transcript").scrollTop = $("#chat-transcript").scrollHeight;
   }
@@ -282,20 +310,91 @@ async function generate() {
   if (!state.sessionId) return;
   $("#generate-btn").disabled = true;
   setStatus("Generating — this can take 20–40 seconds…");
+  const progressEl = resetGenerateProgress();
   try {
     const r = await fetch(`/api/generate/${state.sessionId}`, {
       method: "POST",
     });
     if (!r.ok) throw new Error(await r.text());
-    const j = await r.json();
-    renderArtifacts(j.files);
-    setPhase("generated");
-    showPanels();
-    setStatus("Done. Download the artifacts on the right.");
+
+    const reader = r.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      let idx;
+      while ((idx = buffer.indexOf("\n\n")) >= 0) {
+        const block = buffer.slice(0, idx);
+        buffer = buffer.slice(idx + 2);
+        handleGenerateSseBlock(block, progressEl);
+      }
+    }
   } catch (e) {
     setStatus("Generate failed: " + e.message);
     $("#generate-btn").disabled = false;
+    markGenerateFailed(progressEl);
   }
+}
+
+function resetGenerateProgress() {
+  const container = $("#generate-progress");
+  container.innerHTML = "";
+  container.hidden = false;
+  return container;
+}
+
+function handleGenerateSseBlock(block, progressEl) {
+  let evType = null;
+  let dataLine = null;
+  for (const line of block.split("\n")) {
+    if (line.startsWith("event:")) evType = line.slice(6).trim();
+    else if (line.startsWith("data:")) dataLine = line.slice(5).trim();
+  }
+  if (dataLine === null) return;
+  let obj;
+  try {
+    obj = JSON.parse(dataLine);
+  } catch (_) {
+    return;
+  }
+  if (evType === "status") {
+    markPreviousStepDone(progressEl);
+    appendCurrentStep(progressEl, obj.text || "Working");
+  } else if (evType === "done") {
+    markPreviousStepDone(progressEl);
+    renderArtifacts(obj.files || []);
+    setPhase("generated");
+    showPanels();
+    setStatus("Done. Download the .docx on the right.");
+  }
+}
+
+function markPreviousStepDone(progressEl) {
+  const current = progressEl.querySelector(".gp-step.current");
+  if (current) {
+    current.classList.remove("current");
+    current.classList.add("done");
+  }
+}
+
+function appendCurrentStep(progressEl, text) {
+  const step = document.createElement("div");
+  step.className = "gp-step current";
+  const icon = document.createElement("span");
+  icon.className = "gp-icon";
+  const label = document.createElement("span");
+  label.className = "gp-label";
+  label.textContent = text;
+  step.appendChild(icon);
+  step.appendChild(label);
+  progressEl.appendChild(step);
+}
+
+function markGenerateFailed(progressEl) {
+  const current = progressEl.querySelector(".gp-step.current");
+  if (current) current.classList.replace("current", "failed");
 }
 
 function newSession() {
@@ -305,24 +404,11 @@ function newSession() {
 }
 
 function wireEvents() {
-  $$("#mode-toggle button").forEach((b) =>
-    b.addEventListener("click", () => {
-      if (state.sessionId) return; // locked
-      state.mode = b.dataset.mode;
-      applyModeStyleButtons();
-      // Technology Fit mode is drop-in only (no chat for v1).
-      if (state.mode === "technology_fit") {
-        state.inputStyle = "drop_in";
-        applyModeStyleButtons();
-        showPanels();
-      }
-    })
-  );
   $$("#style-toggle button").forEach((b) =>
     b.addEventListener("click", () => {
       if (state.sessionId) return; // locked
       state.inputStyle = b.dataset.style;
-      applyModeStyleButtons();
+      applyStyleButtons();
       showPanels();
     })
   );

@@ -3,17 +3,33 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Automation SDD Builder</title>
+  <title>Automation SDD Builder · Constellation Brands</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
   <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
   <header>
-    <h1>Automation SDD Builder</h1>
-    <div class="mode-toggle" id="mode-toggle">
-      <button data-mode="sdd_builder" class="active" type="button">SDD Builder</button>
-      <button data-mode="technology_fit" type="button">Technology Fit</button>
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M17.5 7a6.5 6.5 0 1 0 0 10" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
+          <circle cx="19.2" cy="5.6" r="1.4" fill="currentColor"/>
+        </svg>
+      </span>
+      <div class="brand-text">
+        <h1>Automation SDD Builder</h1>
+        <span class="brand-sub">Constellation Brands</span>
+      </div>
     </div>
-    <button id="new-session-btn" type="button" title="Discard current session and start over">New session</button>
+    <button id="new-session-btn" type="button" title="Discard current session and start over">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M3 12a9 9 0 1 0 3-6.7"/>
+        <path d="M3 4v5h5"/>
+      </svg>
+      <span>New session</span>
+    </button>
   </header>
 
   <main>
@@ -27,9 +43,16 @@
         <p class="hint">Paste a meeting transcript, email thread, or process description — or upload a UTF-8 text file. The tool will extract a structured snapshot and run gap analysis.</p>
         <textarea id="dropin-text" placeholder="Paste process description here…"></textarea>
         <label class="file-row">
-          File (optional): <input type="file" id="dropin-file" accept=".txt,.md">
+          File (optional)
+          <input type="file" id="dropin-file" accept=".txt,.md">
         </label>
-        <button id="dropin-submit" type="button">Process</button>
+        <button id="dropin-submit" type="button">
+          <span>Process</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="5" y1="12" x2="19" y2="12"/>
+            <polyline points="13 6 19 12 13 18"/>
+          </svg>
+        </button>
       </div>
 
       <div id="chat-panel">
@@ -77,20 +100,32 @@
             </select>
           </label>
 
-          <button type="submit">Start chat</button>
+          <button type="submit">
+            <span>Start chat</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <line x1="5" y1="12" x2="19" y2="12"/>
+              <polyline points="13 6 19 12 13 18"/>
+            </svg>
+          </button>
         </form>
 
         <div id="chat-transcript" hidden></div>
         <form id="chat-input" hidden>
           <textarea name="message" placeholder="Type your response…" rows="3" required></textarea>
-          <button type="submit">Send</button>
+          <button type="submit" title="Send (Ctrl/Cmd+Enter)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M22 2L11 13"/>
+              <path d="M22 2l-7 20-4-9-9-4 20-7z"/>
+            </svg>
+            <span>Send</span>
+          </button>
         </form>
       </div>
     </section>
 
     <section class="status-pane">
       <div class="phase-indicator">
-        Phase: <span id="phase-label">—</span>
+        Phase <span id="phase-label">—</span>
       </div>
       <div class="coverage">
         <div class="coverage-row">
@@ -99,8 +134,15 @@
         </div>
         <div class="coverage-bar"><div id="coverage-fill"></div></div>
       </div>
-      <button id="generate-btn" type="button" disabled>Generate Draft</button>
+      <button id="generate-btn" type="button" disabled>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M12 3l1.9 4.6L18.5 9l-4.6 1.9L12 15l-1.9-4.6L5.5 9l4.6-1.4L12 3z"/>
+          <path d="M19 14l.9 2.1 2.1.9-2.1.9-.9 2.1-.9-2.1-2.1-.9 2.1-.9z"/>
+        </svg>
+        <span>Generate Draft</span>
+      </button>
       <div id="status-msg"></div>
+      <div id="generate-progress" class="generate-progress" hidden></div>
       <div id="artifacts" class="artifacts"></div>
     </section>
   </main>

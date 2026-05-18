@@ -6,21 +6,24 @@ import os
 import uuid
 from pathlib import Path
 
-from .models import InputStyle, Mode, Session
+from .models import InputStyle, Session
 
 
 def _sessions_root() -> Path:
     return Path(os.environ.get("SESSIONS_DIR", "./sessions"))
 
 
+def session_dir(session_id: str) -> Path:
+    return _sessions_root() / session_id
+
+
 def _state_path(session_id: str) -> Path:
-    return _sessions_root() / session_id / "state.json"
+    return session_dir(session_id) / "state.json"
 
 
-def create_session(mode: Mode, input_style: InputStyle) -> Session:
+def create_session(input_style: InputStyle) -> Session:
     session = Session(
         session_id=str(uuid.uuid4()),
-        mode=mode,
         input_style=input_style,
     )
     save_session(session)

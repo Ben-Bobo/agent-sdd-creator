@@ -1,7 +1,4 @@
-"""Pydantic schemas for extraction output and session state.
-
-Mirrors spec.md → 'Extraction schema' and 'Session schema'.
-"""
+"""Pydantic schemas for extraction output and session state."""
 
 from __future__ import annotations
 
@@ -75,7 +72,6 @@ class Extracted(BaseModel):
 
 # --- Session schema ---------------------------------------------------------
 
-Mode = Literal["technology_fit", "sdd_builder"]
 InputStyle = Literal["drop_in", "chat"]
 Phase = Literal["intake", "narrative", "clarification", "ready_to_generate", "generated"]
 TriggerType = Literal["scheduled", "manual", "event", "other"]
@@ -113,7 +109,6 @@ class Coverage(BaseModel):
 
 class Session(BaseModel):
     session_id: str
-    mode: Mode
     input_style: InputStyle
     phase: Phase = "intake"
     intake: Intake | None = None

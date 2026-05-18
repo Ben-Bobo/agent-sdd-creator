@@ -26,9 +26,8 @@ from . import session as session_store
 from .chat import handle_intake, handle_turn
 from .extraction import extract_from_text
 from .gap_analysis import analyze as analyze_gaps
-from .models import Coverage, Extracted, InputStyle, Intake, Mode, Session
+from .models import Coverage, Extracted, InputStyle, Intake, Session
 from .sdd_generator import generate_sdd
-from .technology_fit import generate_report as generate_tech_fit_report
 
 app = FastAPI(title="Automation SDD Builder")
 
@@ -38,7 +37,6 @@ _templates = Jinja2Templates(directory=str(_BASE_DIR / "templates"))
 
 
 class CreateSessionRequest(BaseModel):
-    mode: Mode
     input_style: InputStyle
 
 
@@ -53,7 +51,7 @@ def index(request: Request) -> HTMLResponse:
 
 @app.post("/api/session", response_model=CreateSessionResponse)
 def create_session(body: CreateSessionRequest) -> CreateSessionResponse:
-    session = session_store.create_session(body.mode, body.input_style)
+    session = session_store.create_session(body.input_style)
     return CreateSessionResponse(session_id=session.session_id)
 
 
@@ -137,8 +135,11 @@ async def chat(session_id: str, body: ChatRequest) -> StreamingResponse:
         )
 
     async def event_stream():
-        async for chunk in handle_turn(session, body.message):
-            yield f"data: {json.dumps({'text': chunk})}\n\n"
+        async for kind, payload in handle_turn(session, body.message):
+            if kind == "status":
+                yield f"event: status\ndata: {json.dumps({'text': payload})}\n\n"
+            else:
+                yield f"data: {json.dumps({'text': payload})}\n\n"
         final = {
             "phase": session.phase,
             "coverage_pct": (session.coverage.overall_pct if session.coverage else None),
@@ -165,7 +166,7 @@ def coverage(session_id: str) -> Coverage:
 
 
 @app.post("/api/generate/{session_id}")
-def generate(session_id: str) -> dict:
+def generate(session_id: str) -> StreamingResponse:
     try:
         session = session_store.load_session(session_id)
     except FileNotFoundError:
@@ -176,35 +177,24 @@ def generate(session_id: str) -> dict:
             detail="Run extraction first (POST /api/dropin or chat intake).",
         )
 
-    if session.mode == "sdd_builder":
-        files = generate_sdd(session)
-    elif session.mode == "technology_fit":
-        report = generate_tech_fit_report(session)
-        session_dir = _session_dir(session_id)
-        session_dir.mkdir(parents=True, exist_ok=True)
-        (session_dir / "report.md").write_text(report, encoding="utf-8")
-        session.generated_files = ["report.md"]
-        session.phase = "generated"
-        session_store.save_session(session)
-        files = session.generated_files
-    else:
-        raise HTTPException(status_code=400, detail=f"Unknown mode: {session.mode}")
+    def event_stream():
+        for kind, value in generate_sdd(session):
+            if kind == "status":
+                yield f"event: status\ndata: {json.dumps({'text': value})}\n\n"
+            elif kind == "done":
+                yield f"event: done\ndata: {json.dumps({'files': value})}\n\n"
 
-    return {"files": files}
+    return StreamingResponse(event_stream(), media_type="text/event-stream")
 
 
 @app.get("/api/download/{session_id}/{filename}")
 def download(session_id: str, filename: str) -> FileResponse:
     if "/" in filename or "\\" in filename or filename.startswith(".."):
         raise HTTPException(status_code=400, detail="Invalid filename")
-    session_dir = _session_dir(session_id).resolve()
-    target = (session_dir / filename).resolve()
-    if not str(target).startswith(str(session_dir)):
+    sdir = session_store.session_dir(session_id).resolve()
+    target = (sdir / filename).resolve()
+    if not str(target).startswith(str(sdir)):
         raise HTTPException(status_code=400, detail="Invalid filename")
     if not target.is_file():
         raise HTTPException(status_code=404, detail="File not found")
     return FileResponse(str(target), filename=filename)
-
-
-def _session_dir(session_id: str) -> Path:
-    return Path(os.environ.get("SESSIONS_DIR", "./sessions")) / session_id

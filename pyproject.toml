@@ -12,8 +12,6 @@ dependencies = [
     "jinja2",
     "python-dotenv",
     "python-multipart",
-    "pytest",
-    "requests",
 ]
 
 [project.optional-dependencies]
@@ -27,17 +25,10 @@ build-backend = "setuptools.build_meta"
 where = ["."]
 include = ["app*"]
 
-[tool.pytest.ini_options]
-markers = [
-    "live: tests that make real LLM calls (slow + cost real money)",
-]
-addopts = "-m 'not live'"
-testpaths = ["evals"]
-
 [tool.ruff]
 line-length = 100
 target-version = "py311"
-extend-exclude = [".venv", "sessions", "evals/output"]
+extend-exclude = [".venv", "sessions"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "B", "UP"]

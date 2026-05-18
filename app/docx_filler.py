@@ -15,6 +15,7 @@ list. Three kinds of fill operations happen here:
 
 from __future__ import annotations
 
+import os
 import re
 from collections.abc import Iterable, Iterator
 from copy import deepcopy
@@ -41,7 +42,9 @@ def fill_template(
     out_path: Path,
     template_path: Path | None = None,
 ) -> Path:
-    template_path = template_path or Path("templates/Automation_SDD_template.docx")
+    template_path = template_path or Path(
+        os.environ.get("TEMPLATE_PATH", "templates/Automation_SDD_template.docx")
+    )
     doc = Document(str(template_path))
 
     # Repeating rows first — they add new XML and shift indices.
@@ -86,7 +89,6 @@ def _build_scalar_values(ex: Extracted) -> dict[str, str]:
         "project_name": s(ex.project_name, "project name missing"),
         "summary": s(ex.summary, "summary missing"),
         "business_owner": s(ex.business_owner, "owner missing"),
-        "flow_diagrams_location": _tbd("populate manually"),
         "jira_project": _tbd("populate manually"),
         "automation_tools": s(ex.automation_tools),
         "btp_services": s(ex.btp_services),
@@ -94,7 +96,7 @@ def _build_scalar_values(ex: Extracted) -> dict[str, str]:
         "new_sdks_objects": s(ex.new_sdks_objects),
         "artificial_intelligence": s(ex.artificial_intelligence),
         "credential_management": s(ex.credential_management),
-        "tool_selection_rationale": s(ex.tool_selection_rationale),
+        "tool_selection_rationale": _tbd("populate manually"),
         "business_criticality": s(ex.business_criticality),
         "complexity_score": s(ex.complexity_score),
         "accepted_failure_threshold": s(ex.accepted_failure_threshold),
@@ -221,8 +223,6 @@ def _render_steps_block(anchor: Paragraph, steps: list[Step]) -> None:
             lines.append(f"    Decision rule: {step.decision_logic}")
         if step.exception_paths:
             lines.append(f"    Exception handling: {'; '.join(step.exception_paths)}")
-        if step.success_criterion:
-            lines.append(f"    Done when: {step.success_criterion}")
 
         lines.append("")
     if lines and lines[-1] == "":

@@ -119,9 +119,9 @@ sessions/            generated at runtime; one folder per session, JSON state + 
 ## Design decisions
 
 - **No agent framework.** Orchestration is a deterministic state machine. LLM calls are isolated, single-purpose, and parsed into Pydantic models with a validation-retry loop. Easier to debug than autonomous loops, and the failure modes are obvious.
-- **JSON files on disk for sessions, not a database.** The operator can `cat` `sessions/<id>/state.json` to see exactly what the model knows. No migrations, no ORM, no Docker compose. Costs nothing to ship.
-- **Prompts live as `.md` files under `prompts/`.** The highest-leverage iteration in this project is prompt editing. Keeping them out of Python means changing tone, instructions, or schema doesn't require a code review.
-- **Vanilla JS, no React, no build step.** One language (Python) for the backend, a single static HTML/CSS/JS bundle for the frontend, SSE for streaming. Deployable as one container later with no rework.
+- **JSON files on disk for sessions, not a database.** The operator can `cat` `sessions/<id>/state.json` to see exactly what the model knows.
+- **Prompts live as `.md` files under `prompts/`.** 
+- **Vanilla JS, no build step.** Python for the backend, a single static HTML/CSS/JS bundle for the frontend, SSE for streaming. Deployable as one container later.
 - **Two-model strategy.** A capable model (`MODEL_MAIN`) does extraction, narrative, and clarifier selection; a cheap model (`MODEL_CHEAP`) handles the one repetitive classifier ("is the user done describing the process?"). Configurable per environment.
 
 

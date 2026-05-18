@@ -51,7 +51,7 @@ flowchart LR
 The orchestration is a hand-written state machine: *no agent framework*.
 ## Quickstart
 
-**Prerequisites:** Python 3.11+, Node 18+, [`uv`](https://docs.astral.sh/uv/), and `@mermaid-js/mermaid-cli` (`npm install -g @mermaid-js/mermaid-cli`). An Anthropic API key from [console.anthropic.com](https://console.anthropic.com) — note this is **separate from a Claude.ai subscription**.
+**Prerequisites:** Python 3.11+, Node 18+, [`uv`](https://docs.astral.sh/uv/), and `@mermaid-js/mermaid-cli` (`npm install -g @mermaid-js/mermaid-cli`). An LLM API key.
 
 ```powershell
 # Clone, then from the repo root:

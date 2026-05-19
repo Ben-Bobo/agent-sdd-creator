@@ -67,8 +67,8 @@ _LOOKAHEAD_GAPS = 5
 _CONSOLIDATE_MIN_GAPS = 4
 
 OPENING_PROMPT = (
-    "Walk me through the process from start to finish. Don't worry about "
-    "perfection, describe it the way you'd explain it to a coworker. I'll "
+    "Walk me through the process from start to finish. Be as specific as you can "
+    "when you describe the steps, but don't worry if you miss something. I'll "
     "ask follow-up questions after."
 )
 

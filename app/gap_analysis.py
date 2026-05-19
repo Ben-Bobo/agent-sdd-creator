@@ -23,13 +23,32 @@ class _CoverageLLM(BaseModel):
     items: list[CoverageItem]
 
 
-def analyze(extracted: Extracted, model: str | None = None) -> Coverage:
+def analyze(
+    extracted: Extracted,
+    raw_input: str | None = None,
+    model: str | None = None,
+) -> Coverage:
     """Run gap analysis. ``model`` defaults to ``MODEL_MAIN``; pass
-    ``MODEL_CHEAP`` for per-turn background passes during chat."""
+    ``MODEL_CHEAP`` for per-turn background passes during chat.
+
+    ``raw_input`` is the unmodified source the user provided (drop-in paste,
+    chat transcript, or both). Passing it lets the model cross-check whether
+    a detail that's missing from ``extracted`` is actually present in the
+    user's own words — avoiding redundant re-asks when extraction lost
+    detail. Optional but strongly recommended."""
     system = load_prompt("gap_analysis") + "\n\n" + load_prompt("rubric")
+    parts: list[str] = []
+    if raw_input and raw_input.strip():
+        parts.append("## Original input")
+        parts.append("")
+        parts.append(raw_input.strip())
+        parts.append("")
+    parts.append("## Extracted JSON")
+    parts.append("")
+    parts.append(extracted.model_dump_json(indent=2))
     raw = complete_json(
         system=system,
-        messages=[{"role": "user", "content": extracted.model_dump_json(indent=2)}],
+        messages=[{"role": "user", "content": "\n".join(parts)}],
         schema=_CoverageLLM,
         model=model or os.environ["MODEL_MAIN"],
         max_tokens=8192,

@@ -86,6 +86,14 @@ def _build_scalar_values(ex: Extracted) -> dict[str, str]:
             return "; ".join(str(x) for x in val) if val else _tbd(reason)
         return str(val)
 
+    def s_optional_list(val: list[str]) -> str:
+        """For fields where an empty list deliberately means 'none required'
+        (document_processing, artificial_intelligence). Both the extractor
+        and the narrative prompt default these to ``[]`` when no OCR / AI
+        capability is needed — so empty should render as 'None required',
+        not [TBD]."""
+        return "; ".join(str(x) for x in val) if val else "None required"
+
     return {
         "project_name": s(ex.project_name, "project name missing"),
         "summary": s(ex.summary, "summary missing"),
@@ -93,9 +101,9 @@ def _build_scalar_values(ex: Extracted) -> dict[str, str]:
         "jira_project": _tbd("populate manually"),
         "automation_tools": _tbd("populate manually"),
         "btp_services": _tbd("populate manually"),
-        "document_processing": s(ex.document_processing),
+        "document_processing": s_optional_list(ex.document_processing),
         "new_sdks_objects": _tbd("populate manually"),
-        "artificial_intelligence": s(ex.artificial_intelligence),
+        "artificial_intelligence": s_optional_list(ex.artificial_intelligence),
         "credential_management": s(ex.credential_management),
         "tool_selection_rationale": _tbd("populate manually"),
         "business_criticality": s(ex.business_criticality),

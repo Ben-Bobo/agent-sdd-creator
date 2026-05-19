@@ -23,7 +23,7 @@ from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 
 from . import session as session_store
-from .chat import handle_intake, handle_turn
+from .chat import _build_chat_context, handle_intake, handle_turn
 from .extraction import extract_from_text
 from .gap_analysis import analyze as analyze_gaps
 from .models import Coverage, Extracted, InputStyle, Intake, Session
@@ -176,7 +176,10 @@ def coverage(session_id: str) -> Coverage:
             status_code=400,
             detail="Run extraction first (POST /api/dropin or chat intake).",
         )
-    session.coverage = analyze_gaps(session.extracted)
+    raw_input_for_gaps = session.raw_input
+    if raw_input_for_gaps is None and session.input_style == "chat":
+        raw_input_for_gaps = _build_chat_context(session)
+    session.coverage = analyze_gaps(session.extracted, raw_input=raw_input_for_gaps)
     session_store.save_session(session)
     return session.coverage
 

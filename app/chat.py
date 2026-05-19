@@ -203,9 +203,10 @@ async def _run_initial_analysis(session: Session) -> AsyncIterator[tuple[str, st
     gap-analysis once, consolidate near-duplicate questions, then build the
     cursor of gaps to walk through."""
     yield "status", "Reviewing what you told me — this may take a minute"
-    session.extracted = extract_from_text(_build_chat_context(session))
+    chat_context = _build_chat_context(session)
+    session.extracted = extract_from_text(chat_context)
     yield "status", "Figuring out what's still missing"
-    session.coverage = analyze_gaps(session.extracted)
+    session.coverage = analyze_gaps(session.extracted, raw_input=chat_context)
 
     raw_gaps = [item for item in session.coverage.items if item.status != "covered"]
 

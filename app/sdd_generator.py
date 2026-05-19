@@ -57,15 +57,19 @@ def generate_sdd(session: Session) -> Iterator[tuple[str, Any]]:
 
     # Chat-mode sessions: per-turn extraction used MODEL_CHEAP, so re-extract
     # with the main model once before we build the final doc.
+    raw_input_for_gaps: str | None
     if session.input_style == "chat":
         yield "status", "Final pass on your description"
-        session.extracted = extract_from_text(_build_chat_context(session))
+        raw_input_for_gaps = _build_chat_context(session)
+        session.extracted = extract_from_text(raw_input_for_gaps)
         # Coverage is derived from Extracted; recompute against the fresh one.
         session.coverage = None
+    else:
+        raw_input_for_gaps = session.raw_input
 
     if session.coverage is None:
         yield "status", "Running gap analysis"
-        session.coverage = analyze_gaps(session.extracted)
+        session.coverage = analyze_gaps(session.extracted, raw_input=raw_input_for_gaps)
 
     yield "status", "Drafting narrative sections"
     narrative = _run_narrative(session.extracted, session.coverage)

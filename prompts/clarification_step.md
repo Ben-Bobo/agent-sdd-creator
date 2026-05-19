@@ -22,11 +22,18 @@ The rubric category definitions are loaded below the `---`.
 
 ## Rules
 
-- Treat "I don't know" / "not sure" / "I'd have to check" / "depends on the situation" as not satisfied for the current gap.
-- For `decision_logic`: the rubric requires the **exact condition and threshold**. "Depends on the amount" is not satisfied — drill for the number.
-- For `action`: the rubric requires click-by-click / menu path / API call. "Click around in SAP" is not satisfied — drill for menu path or transaction code.
-- Don't accept paraphrases when the rubric calls for specifics.
+- **Bias toward `satisfied: true`.** The user is busy and knows the process; if their answer contains the concrete content the rubric is fishing for — even if terse — accept it and move on. Only re-ask when the answer is a true non-answer (see below) or is genuinely missing the rubric's required specific. Re-asking something the user already answered is the worst failure mode of this tool.
+- **Non-answers** ("I don't know", "not sure", "I'd have to check", "depends on the situation", "I can't say", silence) → not satisfied for the current gap, follow-up should drill once.
+- **Terse-but-complete answers are satisfied.** Examples that count as `satisfied: true`:
+  - Q: "Which fields/columns must be present in the file?" → A: "Plant, material, triggered by" → satisfied (they named the columns; that's the answer).
+  - Q: "What invalidates a row?" → A: "If any field is missing, email sender" → satisfied (rule + action stated).
+  - Q: "What menu path do you use in SAP CK24?" → A: "Enter transaction code CK24, then the period and fiscal year, then click MarkingAllowance" → satisfied (transaction + sequence given; don't drill for screenshots).
+  - Q: "What's the approval threshold?" → A: "$5,000" → satisfied.
+- **Re-check the transcript before drilling.** If the user's earlier turns already answered this question — even in different words — treat as satisfied. Do not drag the user back to repeat themselves.
+- For `decision_logic`: the rubric requires the **exact condition and threshold** only when the user has invoked a branch. If they said "depends on the amount" → drill for the number. If they didn't claim there's a branch, don't fish for one.
+- For `action`: accept the click/menu/transaction sequence the user gave even if not exhaustive. "Open CK24, enter period and FY, click MarkingAllowance, then loop the plants — double-click Released, click the wand, set ZCBI and 01, save" is enough — don't ask them to enumerate every keypress. Only drill when the answer was genuinely vague ("click around in SAP", "do the SAP stuff").
 - **Email is always Microsoft Graph API.** If the user described an Outlook UI action, that doesn't satisfy `action` — drill for the API-level operation (which mailbox/folder).
+- **"I just told you" / "I already said" / "see above" → satisfied.** The user pointing at their earlier answer is a clear signal we asked redundantly. Mark satisfied, advance the cursor; never re-ask.
 - Don't ask about platform plumbing (tenant URLs, credentials, MFA, service-account setup, library specifics).
 - **Workflow/technical failures are out of scope.** Never drill into "what if the [API call / PATCH / GET / HTTP request / library function / file / network / system / attachment] fails or is corrupt or is unreadable" — those are developer-handled reliability concerns, not business decisions. For `exception_paths`, only drill on **business process branches for data variability**: filter returns no rows, lookup finds no match, required field blank, value outside expected enum, etc. If the current gap is framed as a technical-reliability scenario, mark `satisfied: true` and move on so the cursor advances — gap_analysis shouldn't have surfaced it, but we're defensive here.
 - **REFramework config (`settings.xlsx`) is developer-owned.** This team's automations start every run by reading configurable values from a settings file the developer maintains. If the user's answer references "the settings file", "config values", "the approver list from config", etc., treat that as a complete, valid answer. Don't drill into the file's columns, structure, sheet names, or location. Mark `satisfied: true` and move on.

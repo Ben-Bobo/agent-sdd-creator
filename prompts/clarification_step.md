@@ -22,26 +22,15 @@ The rubric category definitions are loaded below the `---`.
 
 ## Rules
 
-### The governing principle (apply this before judging anything else)
-
-**Every question must be one only the business user can answer from their business knowledge.** Apply this self-check to the current gap:
-
-> *Could a developer answer this question themselves once they know the business intent? If yes, the question is out of scope — mark `satisfied: true` and leave `follow_up` empty so the cursor advances.*
-
-This catches questions about how the bot is built (UI vs library, HTTP verb, file format details, retry logic, config-file structure, server names, credentials, etc.) regardless of how they're phrased. Gap-analysis shouldn't have surfaced them, but you're the defensive layer.
-
-For `exception_paths` specifically: only drill on **business process branches for data variability** (filter returns no rows, lookup finds no match, required field blank, value outside expected enum). Technical-reliability scenarios (file/API/network failures) auto-fail the principle above.
-
-### Standards for "satisfied"
-
-- Treat "I don't know" / "not sure" / "I'd have to check" / "depends on the situation" as not satisfied.
+- Treat "I don't know" / "not sure" / "I'd have to check" / "depends on the situation" as not satisfied for the current gap.
 - For `decision_logic`: the rubric requires the **exact condition and threshold**. "Depends on the amount" is not satisfied — drill for the number.
-- For `action`: the rubric requires the click sequence the user actually performs (menu path, transaction code, button labels) for business apps. For file reads/writes (xlsx, csv, pdf), the file type is the answer; do NOT drill into how the bot opens it.
+- For `action`: the rubric requires click-by-click / menu path / API call. "Click around in SAP" is not satisfied — drill for menu path or transaction code.
 - Don't accept paraphrases when the rubric calls for specifics.
-- **Email is always Microsoft Graph API.** If the user described an Outlook UI action, that doesn't satisfy `action` — drill for the business-level intent (which mailbox/folder, what filter), not the API mechanics.
-
-### Style
-
+- **Email is always Microsoft Graph API.** If the user described an Outlook UI action, that doesn't satisfy `action` — drill for the API-level operation (which mailbox/folder).
+- Don't ask about platform plumbing (tenant URLs, credentials, MFA, service-account setup, library specifics).
+- **Workflow/technical failures are out of scope.** Never drill into "what if the [API call / PATCH / GET / HTTP request / library function / file / network / system / attachment] fails or is corrupt or is unreadable" — those are developer-handled reliability concerns, not business decisions. For `exception_paths`, only drill on **business process branches for data variability**: filter returns no rows, lookup finds no match, required field blank, value outside expected enum, etc. If the current gap is framed as a technical-reliability scenario, mark `satisfied: true` and move on so the cursor advances — gap_analysis shouldn't have surfaced it, but we're defensive here.
+- **REFramework config (`settings.xlsx`) is developer-owned.** This team's automations start every run by reading configurable values from a settings file the developer maintains. If the user's answer references "the settings file", "config values", "the approver list from config", etc., treat that as a complete, valid answer. Don't drill into the file's columns, structure, sheet names, or location. Mark `satisfied: true` and move on.
+- **File read/write mechanism is developer-owned.** If the user named a file (`Costing_BOT.xlsx`, `vendors.csv`, `invoice.pdf`, etc.) and the gap or follow-up is fishing for whether they "open it in Excel" vs "use a script" or any other library/tool question, mark `satisfied: true` and move on. The file type IS the answer for the business; the developer picks the read mechanism.
 - Tone: conversational, plain English. One question per follow-up.
 - `also_satisfies` must be a (possibly empty) list of `id` strings drawn ONLY from the upcoming-gaps list. Do not invent ids.
 

@@ -27,24 +27,22 @@ So: ask them for whatever they didn't already cover, at whatever level — rules
 - Reporting needs, success metrics
 - **Click sequences, menu paths, transaction codes, field-by-field entry order** — they do these clicks daily and can describe them.
 
-## What's OUT of scope (do NOT ask) — the governing principle
+## What's OUT of scope (do NOT ask)
 
-**Every clarification question must be one only the business user can answer from their business knowledge of the process.**
+- Tenant domains, API URLs, server names, UPNs
+- Credentials, service-account setup, MFA mechanics
+- Library / SDK implementation details ("which Graph endpoint syntax", "what HTTP verb")
+- **How the bot reads/writes a given file** — whether it "opens it in Excel" vs uses a library, whether a PDF is parsed via Acrobat UI vs a PDF library, whether a CSV is opened in a spreadsheet vs streamed line-by-line. If the user named the file type (`.xlsx`, `.csv`, `.pdf`, `.txt`, etc.), that's all the business needs to say — the developer picks the read/write mechanism. Score the relevant `application_screen` / `action` items `covered` based on file type alone. Never ask the user "do you open this in Excel or use a script?"
+- **Workflow / technical failures the developer handles** — file corrupt, attachment unreadable, API/HTTP errors, library exceptions, network timeouts, retries/backoff, status-code handling, token refresh, source system unavailable, schema drift, email send failed. The developer designs reliability and retry behavior during build; the business does not own these decisions and should never be asked about them.
+- Anything the automation platform layer already solves — the chat user is told to assume reusable platform operations like `send_mail`, `get_mail`, `move_to_folder` already exist.
+- **The REFramework config file (`settings.xlsx`).** This team's automations start every run by reading configurable values (emails, approver lists, thresholds, paths, etc.) from a settings file the developer owns. Do NOT ask about the file's structure, columns, format, sheet names, or where it lives. If a step references "the approver list from the settings file" or "emails from config", that's the established pattern — treat it as covered.
 
-Apply this self-check to every question before emitting it:
+For `exception_paths`, only score `partial` / `missing` when there is a **business-side process branch for data variability** that the user plausibly has an opinion on:
 
-> *Could a developer answer this question themselves once they know the business intent? If yes, do not ask it.*
+- ✅ ASK: filter returns no rows ("you filter for high-priority — what if nothing's high-priority this week?"), lookup returns no match ("you look up vendor by ID — what if the ID isn't in the lookup table?"), required field blank ("the amount column is empty for a row — what do you do?"), value outside expected enum ("UPS_STATUS comes back as something other than your known statuses — what then?").
+- ❌ DO NOT ASK: anything that's really "what if the file/API/system/email/network fails." Even if it's framed as a business question, if the underlying cause is technical reliability, it's out of scope. Mark `exception_paths` `covered` when the only gap is a technical-reliability scenario.
 
-If the answer is something the developer would decide while building the automation — protocols, libraries, UI vs script, retries, file storage paths, config-file structure, error handling, server names, credentials — it is out of scope. Score the relevant rubric item `covered` and move on.
-
-In-scope questions ask **what** the business does and **why**: thresholds, decision rules, branch destinations, ownership, business calendar, compliance requirements, click sequences the user actually performs daily. Out-of-scope questions ask **how** the bot will be built.
-
-Two anchor examples (to calibrate, not to enumerate):
-
-- ❌ "Do you open `Costing_BOT.xlsx` in Excel or use a script?" — developer can decide once they know it's xlsx data.
-- ✅ "If the lookup in `Costing_BOT.xlsx` finds no match for a row's vendor code, what should the bot do?" — only the business knows.
-
-For `exception_paths` specifically, only score `partial` / `missing` when there is a **business-side process branch for data variability** (filter returns no rows, lookup finds no match, required field blank, value outside expected enum). Technical-reliability scenarios (API/file/network failures) auto-fail the self-check above and are always `covered`.
+If the only gap in a rubric category is platform plumbing (e.g., `application_screen` for an email step where the system "Microsoft Graph API → Outlook mailbox" is known and only the tenant URL is unknown), mark it `covered`.
 
 ## The `action` category
 
@@ -64,7 +62,7 @@ Examples of good `action` questions:
 - **One question per item.** Don't bundle multiple asks into one string.
 - **Aware of context.** Use the application names, step summaries, and other extracted detail so the user knows what you're referring to.
 - **Not redundant.** If the same information was already given elsewhere in the input, mark the item `covered` and skip the question.
-- **Apply the principle.** Before emitting any question, run the self-check from the "What's OUT of scope" section: *could a developer answer this themselves once they know the business intent?* If yes, the question is wrong — change the rubric item to `covered`.
+- **No platform plumbing.** Never ask about tenants, URLs, credentials, or library internals.
 
 ## Output
 

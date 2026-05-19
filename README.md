@@ -2,7 +2,7 @@
 
 Turn business descriptions of a process into a developer-ready spec.
 
-Built for the in-between work an automation analyst does every day: translating business hand-waving into something a Blue Prism / Power Automate / SAP BTP developer can actually build from.
+Built for the in-between work an automation analyst does every day: translating business hand-waving into something a developer can actually build from.
 
 ## Features
 

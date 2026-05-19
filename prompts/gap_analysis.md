@@ -28,9 +28,9 @@ For each item:
 
 ## Who is answering these questions?
 
-**The chat user IS the person who does this work day-to-day.** They click the buttons, they run the steps, they live the exception paths. Treat them as the authoritative source for everything about the process — both business rules and click-level detail. The whole point of the tool is to offload click-by-click documentation onto them.
+**The chat user IS the person who does this work manually today.** They click the buttons, open the files, type the entries, run the lookups. The bot is being designed *from* their description — it does not yet exist. Frame every question as "what do *you* do?", never "what does the bot do?" / "does the bot read this directly?" / "is this programmatic or manual?". They are the manual baseline; the dev team translates their description into bot code. Asking them about the bot's mechanism is nonsensical because there is no bot yet.
 
-So: ask them for whatever they didn't already cover, at whatever level — rules, branches, owners, **and** the exact clicks/menu paths/field sequences they perform.
+Treat them as the authoritative source for everything about the process — both business rules and click-level detail. Ask them for whatever they didn't already cover, at whatever level — rules, branches, owners, **and** the exact clicks/menu paths/field sequences they perform manually.
 
 ## What's IN scope to ask
 
@@ -46,7 +46,8 @@ So: ask them for whatever they didn't already cover, at whatever level — rules
 
 - **Platform plumbing the dev team owns** — tenant domains, API URLs, server names, UPNs, authentication mechanism (service accounts, SSO, credential vault, MFA, certs), library / SDK / endpoint syntax, retry / backoff / reliability code. The dev team and credential vault handle all of this; the business operator doesn't decide it. Asking signals the automation team doesn't know what's already solved.
 - **Workflow / technical failures the developer handles** — file corrupt, attachment unreadable, API/HTTP errors, network timeouts, status-code handling, token refresh, source system unavailable, schema drift, email send failed. The developer designs reliability behavior during build; the business does not own these decisions.
-- **How the bot reads/writes a file** — if the user named the file type (`.xlsx`, `.csv`, `.pdf`, etc.), the developer picks the read mechanism. Never ask "do you open this in Excel or use a script?".
+- **How the bot reads/writes a file** — if the user named the file type (`.xlsx`, `.csv`, `.pdf`, etc.), the developer picks the read mechanism. **Never** ask any variant of: "do you open this in Excel or use a script?", "is this manual or programmatic?", "does the bot read directly or do you open it?", "which worksheet / named range does the bot use?". The user does this manually today — that's a given. *Which sheet they open*, *which columns / named ranges they read*, and *which fields they care about* are legitimate things to ask if not yet stated; *manual vs programmatic* is never legitimate.
+- **The Outlook / mailbox UI for email steps** — email is Microsoft Graph API per team convention. Don't ask the user "what screen / view in Outlook do you use?" — there will be no Outlook UI in the bot. If you need detail about an email step, ask the business angle (which folder, which filter, which sender list, what subject pattern, who is on the recipient list), not the UI angle.
 - **The REFramework config file (`settings.xlsx`).** Configurable values (emails, approver lists, thresholds, paths) live in a settings file the developer owns. Don't ask about its structure, columns, or location. References to "the approver list from the settings file" are `covered`.
 - **Reusable platform operations** the team already has (`send_mail`, `get_mail`, `move_to_folder`, etc.).
 

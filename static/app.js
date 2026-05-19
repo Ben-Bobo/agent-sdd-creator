@@ -55,6 +55,13 @@ function updateGenerateButton() {
   const haveSomething =
     state.coveragePct !== null && state.coveragePct > 0;
   btn.disabled = !(havePhase && haveSomething);
+  // Warning is relevant whenever the button is clickable and the user
+  // hasn't yet been told the SDD is ready — i.e., before "ready_to_generate".
+  const showWarning =
+    !btn.disabled &&
+    state.phase !== "ready_to_generate" &&
+    state.phase !== "generated";
+  $("#generate-warning").hidden = !showWarning;
 }
 
 function showPanels() {
@@ -69,6 +76,10 @@ function showPanels() {
   intakeForm.hidden = !inIntake;
   transcript.hidden = inIntake;
   chatInput.hidden = inIntake || state.phase === "generated";
+
+  // Intro card lives only on the intake screen.
+  const intro = $("#tool-intro");
+  if (intro) intro.hidden = !inIntake;
 }
 
 function applyStyleButtons() {
@@ -87,7 +98,7 @@ function addBubble(role, text) {
   div.className = `chat-msg ${role}`;
   const label = document.createElement("span");
   label.className = "role-label";
-  label.textContent = role === "user" ? "You" : "Assistant";
+  label.textContent = role === "user" ? "You" : "SDD Builder";
   div.appendChild(label);
   const body = document.createElement("span");
   body.className = "body";
@@ -118,6 +129,10 @@ function renderArtifacts(files) {
     a.appendChild(label);
     container.appendChild(a);
   }
+  // The "review then forward" instructions only make sense after at least
+  // one artifact exists.
+  const post = $("#post-generation");
+  if (post) post.hidden = files.length === 0;
 }
 
 async function ensureSession() {

@@ -36,6 +36,28 @@ def _cached_system(text: str) -> list[dict]:
     return [{"type": "text", "text": text, "cache_control": {"type": "ephemeral"}}]
 
 
+def _token_limit_kwarg(model: str, value: int) -> dict:
+    """Pick ``max_tokens`` vs ``max_completion_tokens`` based on the model.
+
+    Newer OpenAI / Azure deployments (gpt-4o on current API versions, the
+    o-series reasoning models) only accept ``max_completion_tokens``.
+    Anthropic and older OpenAI models still use ``max_tokens``.
+
+    Special case: corporate gateways often expose Claude models behind an
+    ``openai/`` prefix but route them to Bedrock under the hood. Those
+    Bedrock-routed Claude deployments accept ``max_tokens`` but NOT
+    ``max_completion_tokens`` (the gateway translates the latter into the
+    legacy ``max_tokens_to_sample`` which current Bedrock Claude rejects).
+    So when the model name says "claude", always send ``max_tokens``.
+    """
+    lower = model.lower()
+    if "claude" in lower or "anthropic" in lower:
+        return {"max_tokens": value}
+    if model.startswith(("openai/", "azure/", "azure_ai/")):
+        return {"max_completion_tokens": value}
+    return {"max_tokens": value}
+
+
 def _log_usage(resp) -> None:
     """Print cached-vs-uncached input tokens to stderr when LLM_LOG_USAGE=1.
 
@@ -58,7 +80,8 @@ def complete(system: str, messages: list[dict], model: str, max_tokens: int = 40
     resp = litellm.completion(
         model=model,
         messages=[{"role": "system", "content": _cached_system(system)}] + messages,
-        max_tokens=max_tokens,
+        temperature=0,
+        **_token_limit_kwarg(model, max_tokens),
     )
     _log_usage(resp)
     return resp.choices[0].message.content
@@ -87,8 +110,9 @@ def complete_json(
         resp = litellm.completion(
             model=model,
             messages=[{"role": "system", "content": _cached_system(system)}] + conv,
-            max_tokens=max_tokens,
             response_format=schema,
+            temperature=0,
+            **_token_limit_kwarg(model, max_tokens),
         )
         _log_usage(resp)
         raw = resp.choices[0].message.content
@@ -119,8 +143,9 @@ async def stream(
     resp = await litellm.acompletion(
         model=model,
         messages=[{"role": "system", "content": _cached_system(system)}] + messages,
-        max_tokens=max_tokens,
         stream=True,
+        temperature=0,
+        **_token_limit_kwarg(model, max_tokens),
     )
     async for chunk in resp:
         delta = chunk.choices[0].delta.content

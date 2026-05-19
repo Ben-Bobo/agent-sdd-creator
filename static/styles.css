@@ -795,6 +795,78 @@ button[type="submit"] svg,
 }
 
 /* ============================================================
+   Info cards (intro + post-generation)
+   ============================================================ */
+
+.info-card {
+  padding: 4px 0 18px 18px;
+  margin-bottom: 22px;
+  font-size: 14px;
+  line-height: 1.6;
+  border-left: 2px solid var(--gold);
+  background: transparent;
+  color: var(--text);
+}
+
+.info-card h3 {
+  margin: 0 0 6px 0;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--gold-hover);
+}
+
+.info-card p {
+  margin: 8px 0 0 0;
+  color: var(--text-muted);
+}
+
+.info-card p:first-of-type { margin-top: 4px; }
+
+.info-card.success {
+  background: linear-gradient(180deg, var(--gold-soft) 0%, transparent 100%);
+  border-left-width: 3px;
+  padding: 14px 16px 16px 18px;
+  border-radius: 0 6px 6px 0;
+}
+
+.info-card.success h3 { color: var(--gold-hover); }
+
+.info-card code {
+  background: var(--surface-alt);
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 12px;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  color: var(--text);
+}
+
+.info-card a {
+  color: var(--gold-hover);
+  text-decoration: none;
+  border-bottom: 1px solid rgba(182, 151, 90, 0.4);
+  font-weight: 500;
+}
+
+.info-card a:hover { border-bottom-color: var(--gold-hover); }
+
+/* ============================================================
+   Generate-warning note (under the Generate button)
+   ============================================================ */
+
+.warning-note {
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text-muted);
+  background: var(--surface-alt);
+  border-left: 2px solid var(--gold);
+  padding: 8px 10px;
+  margin: 10px 0 0 0;
+  border-radius: 0 4px 4px 0;
+}
+
+/* ============================================================
    Responsive
    ============================================================ */
 

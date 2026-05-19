@@ -31,6 +31,22 @@
 
   <main>
     <section class="input-pane">
+      <!-- Visible only while the user is on the intake form; hidden once chat starts. -->
+      <aside id="tool-intro" class="info-card">
+        <h3>About this tool</h3>
+        <p>
+          This is a required part of the automation intake process for the
+          Intelligent Automation and AI Team. Walking through the intake form
+          and the follow-up chat produces a Software Design Document (SDD)
+          that jump-starts our development backlog.
+        </p>
+        <p>
+          Please answer the questions as thoroughly as you can. If the team
+          needs more detail after reviewing your SDD, someone will follow up
+          with you directly.
+        </p>
+      </aside>
+
       <!-- Drop-in mode is hidden while we stabilize the chat flow. -->
       <div class="style-toggle" id="style-toggle" hidden>
         <button data-style="chat" class="active" type="button">Chat</button>
@@ -139,9 +155,27 @@
         </svg>
         <span>Generate Draft</span>
       </button>
+      <p id="generate-warning" class="warning-note" hidden>
+        You can click Generate at any time, but generating before answering
+        the clarification questions will produce an incomplete SDD. If you do,
+        the team will likely need a follow-up call for further process
+        analysis.
+      </p>
       <div id="status-msg"></div>
       <div id="generate-progress" class="generate-progress" hidden></div>
       <div id="artifacts" class="artifacts"></div>
+      <div id="post-generation" class="info-card success" hidden>
+        <h3>Your SDD is ready</h3>
+        <p>
+          Please review the step-by-step flow at the bottom of the document
+          to confirm it reflects your process accurately.
+        </p>
+        <p>
+          Once you've reviewed it, forward <code>sdd.docx</code> to
+          <strong><a id="contact-email-link" href="mailto:{{ contact_email }}">{{ contact_email }}</a></strong>
+          so we can add it to the JIRA story once created! Thank you!
+        </p>
+      </div>
     </section>
   </main>
 

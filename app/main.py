@@ -46,7 +46,15 @@ class CreateSessionResponse(BaseModel):
 
 @app.get("/", response_class=HTMLResponse)
 def index(request: Request) -> HTMLResponse:
-    return _templates.TemplateResponse(request, "index.html", {})
+    return _templates.TemplateResponse(
+        request,
+        "index.html",
+        {
+            "contact_email": os.environ.get(
+                "BOT_CONTROLLER_EMAIL", "rpa.botcontroller@cbrands.com"
+            ),
+        },
+    )
 
 
 @app.post("/api/session", response_model=CreateSessionResponse)

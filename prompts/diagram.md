@@ -23,6 +23,7 @@ You produce an applications/systems diagram for an automation process. The user 
   - `processing` — the automation runtime itself. Always include one node here with `id: "Bot"` and `label: "Automation"`. The specific platform (Blue Prism, Power Automate, etc.) is a developer decision; do not put it in the label.
   - `output` — destinations data ends up (downstream apps, databases, reports, dashboards, emails sent).
 - If an application shows up as both source and output, include it once in whichever subgraph fits its primary role and route both edges through it.
+- **Do NOT add `settings.xlsx` / the REFramework config file as a node.** Every automation built by this team reads configurable values from a settings file at the start of each run — it's part of the automation's own infrastructure, not a system in the business flow. Same goes for any other internal state/checkpoint files the bot maintains for itself.
 - **`id` must be short and alphanumeric** (e.g., `SAP`, `Outlook`, `Tracker`, `UPS`). No spaces, hyphens, or punctuation. IDs must be unique within the diagram.
 - **`label` can contain any characters** — spaces, parentheses, hyphens, ampersands, etc. The Python formatter handles quoting and escaping. For multi-line labels, use `<br/>` for line breaks.
 - **Email is always Microsoft Graph API.** Outlook, Exchange, shared-mailbox apps must be labeled accordingly, e.g. `label: "Microsoft Graph API<br/>Outlook mailbox"`. The edges from/to that node should reflect API operations.

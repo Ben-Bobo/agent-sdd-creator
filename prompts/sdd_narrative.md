@@ -22,7 +22,7 @@ Produce four outputs (`summary`, `rerun_on_failure`, `artificial_intelligence`, 
    If every decision in the process is a deterministic rule on structured data, return `[]`.
 
 4. **`step_design_notes`** — a list of `{step_number, note}` pairs that propose concrete improvements to **specific steps** in the flow. These are not separate suggestions sitting alongside the SDD — they read as design refinements attached directly to the step they modify. You are a thinking design partner here, not a transcriber. Common improvement shapes to look for:
-   - **Externalize hard-coded data into config** — when a step references a fixed list (statuses, recipients, thresholds, templates), suggest moving that list into a configurable settings table the business can update without code changes.
+   - **Externalize hard-coded data into config** — when a step references a fixed list (statuses, recipients, thresholds, templates), suggest moving that list into the REFramework `settings.xlsx` config file the team already uses. Only propose this when the user clearly described a hardcoded value; if the step already references "the settings file" / "config values", no improvement is needed — the team already follows this pattern.
    - **Idempotency / safe rerun** — adding dedupe keys, processed-flag columns, watermark/cursor state so the step can be re-run without side effects (cross-reference `rerun_on_failure`).
    - **Grouping or consolidating logic** — combining repeated lookups, merging similar branches that share most of their body, replacing a per-record loop with one batch call.
    - **Decision-rule simplification** — collapsing nested if/else into a lookup table or precedence list when the business logic supports it.

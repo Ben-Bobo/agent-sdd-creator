@@ -23,7 +23,7 @@ from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 
 from . import session as session_store
-from .chat import _build_chat_context, handle_intake, handle_turn
+from .chat import _build_chat_context, handle_intake, handle_turn, skip_current_gap
 from .extraction import extract_from_text
 from .gap_analysis import analyze as analyze_gaps
 from .models import Coverage, Extracted, InputStyle, Intake, Session
@@ -163,6 +163,34 @@ async def chat(session_id: str, body: ChatRequest) -> StreamingResponse:
         yield f"event: done\ndata: {json.dumps(final)}\n\n"
 
     return StreamingResponse(event_stream(), media_type="text/event-stream")
+
+
+class SkipResponse(BaseModel):
+    text: str
+    phase: str
+    clarification_progress: dict | None = None
+
+
+@app.post("/api/chat/{session_id}/skip", response_model=SkipResponse)
+def skip_clarification(session_id: str) -> SkipResponse:
+    try:
+        session = session_store.load_session(session_id)
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="Session not found") from None
+    if session.phase != "clarification":
+        raise HTTPException(
+            status_code=400, detail="Skip is only available during clarification."
+        )
+    text = skip_current_gap(session)
+    progress = (
+        {
+            "position": session.clarification_position,
+            "total": len(session.clarification_cursor),
+        }
+        if session.clarification_cursor
+        else None
+    )
+    return SkipResponse(text=text, phase=session.phase, clarification_progress=progress)
 
 
 @app.post("/api/coverage/{session_id}", response_model=Coverage)

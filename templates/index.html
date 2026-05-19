@@ -126,13 +126,22 @@
         <div id="chat-transcript" hidden></div>
         <form id="chat-input" hidden>
           <textarea name="message" placeholder="Type your response…" rows="3" required></textarea>
-          <button type="submit" title="Send (Ctrl/Cmd+Enter)">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M22 2L11 13"/>
-              <path d="M22 2l-7 20-4-9-9-4 20-7z"/>
-            </svg>
-            <span>Send</span>
-          </button>
+          <div class="chat-input-buttons">
+            <button type="button" id="skip-btn" title="Skip this question" hidden>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polygon points="5 4 15 12 5 20 5 4"/>
+                <line x1="19" y1="5" x2="19" y2="19"/>
+              </svg>
+              <span>Skip</span>
+            </button>
+            <button type="submit" title="Send (Ctrl/Cmd+Enter)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M22 2L11 13"/>
+                <path d="M22 2l-7 20-4-9-9-4 20-7z"/>
+              </svg>
+              <span>Send</span>
+            </button>
+          </div>
         </form>
       </div>
     </section>

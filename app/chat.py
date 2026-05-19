@@ -287,6 +287,46 @@ def _consolidate_gaps(items: list[CoverageItem]) -> list[CoverageItem]:
     return out
 
 
+def skip_current_gap(session: Session) -> str:
+    """User clicked Skip during clarification: mark the current gap unresolved
+    and advance. Returns the next question (or READY_MESSAGE if exhausted).
+    Same force-advance behavior as the existing max-attempts path."""
+    cursor = session.clarification_cursor
+    if not cursor:
+        session.phase = "ready_to_generate"
+        text = READY_MESSAGE
+        session.transcript.append(ChatMessage(role="assistant", content=text, ts=_now()))
+        session_store.save_session(session)
+        return text
+
+    pos = session.clarification_position
+    if pos < len(cursor):
+        cursor[pos].final_status = "unresolved"
+        session.clarification_position = pos + 1
+
+    # Same already-answered sweep as _advance_cursor — keep behavior consistent
+    # so we don't re-ask gaps the narrative already covered.
+    while session.clarification_position < len(cursor):
+        nxt = cursor[session.clarification_position]
+        if nxt.final_status is not None:
+            session.clarification_position += 1
+            continue
+        if not _is_already_answered(nxt.item, session.transcript):
+            break
+        nxt.final_status = "satisfied"
+        session.clarification_position += 1
+
+    if session.clarification_position >= len(cursor):
+        session.phase = "ready_to_generate"
+        text = READY_MESSAGE
+    else:
+        text = cursor[session.clarification_position].item.question
+
+    session.transcript.append(ChatMessage(role="assistant", content=text, ts=_now()))
+    session_store.save_session(session)
+    return text
+
+
 async def _advance_cursor(session: Session, user_message: str) -> str:
     """Validate the user's reply against the current gap (and a small
     lookahead window). Mark any gaps the answer covered as satisfied and

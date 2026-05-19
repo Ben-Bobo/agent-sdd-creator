@@ -77,6 +77,10 @@ function showPanels() {
   transcript.hidden = inIntake;
   chatInput.hidden = inIntake || state.phase === "generated";
 
+  // Skip only makes sense while there's an active clarification question.
+  const skipBtn = $("#skip-btn");
+  if (skipBtn) skipBtn.hidden = state.phase !== "clarification";
+
   // Intro card lives only on the intake screen.
   const intro = $("#tool-intro");
   if (intro) intro.hidden = !inIntake;
@@ -349,6 +353,38 @@ function handleChatSseBlock(block, bodySpan, chatState) {
   }
 }
 
+async function skipQuestion() {
+  if (!state.sessionId || state.phase !== "clarification") return;
+  const sendBtn = $("#chat-input button[type='submit']");
+  const skipBtn = $("#skip-btn");
+  sendBtn.disabled = true;
+  skipBtn.disabled = true;
+  const bodySpan = addBubble("assistant", "");
+  showThinking(bodySpan, "Moving on");
+  try {
+    const r = await fetch(`/api/chat/${state.sessionId}/skip`, { method: "POST" });
+    if (!r.ok) throw new Error(await r.text());
+    const j = await r.json();
+    clearThinking(bodySpan);
+    bodySpan.textContent = j.text || "";
+    setPhase(j.phase);
+    if (j.clarification_progress) {
+      setClarificationProgress(
+        j.clarification_progress.position,
+        j.clarification_progress.total
+      );
+    }
+    showPanels();
+  } catch (e) {
+    clearThinking(bodySpan);
+    setStatus("Skip failed: " + e.message);
+  } finally {
+    sendBtn.disabled = false;
+    skipBtn.disabled = false;
+    $("#chat-input textarea").focus();
+  }
+}
+
 async function generate() {
   if (!state.sessionId) return;
   $("#generate-btn").disabled = true;
@@ -460,6 +496,7 @@ function wireEvents() {
   $("#dropin-submit").addEventListener("click", submitDropin);
   $("#chat-input").addEventListener("submit", sendChat);
   $("#generate-btn").addEventListener("click", generate);
+  $("#skip-btn").addEventListener("click", skipQuestion);
   $("#new-session-btn").addEventListener("click", newSession);
 
   // Ctrl/Cmd+Enter in chat textarea submits.

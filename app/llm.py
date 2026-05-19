@@ -20,6 +20,8 @@ from typing import TypeVar
 import litellm
 from pydantic import BaseModel, ValidationError
 
+from .auth import ensure_access_token
+
 T = TypeVar("T", bound=BaseModel)
 
 litellm.suppress_debug_info = True
@@ -77,6 +79,7 @@ def _log_usage(resp) -> None:
 
 
 def complete(system: str, messages: list[dict], model: str, max_tokens: int = 4096) -> str:
+    ensure_access_token()
     resp = litellm.completion(
         model=model,
         messages=[{"role": "system", "content": _cached_system(system)}] + messages,
@@ -107,6 +110,7 @@ def complete_json(
     conv = list(messages)
     last_error: Exception | None = None
     for attempt in range(max_retries + 1):
+        ensure_access_token()
         resp = litellm.completion(
             model=model,
             messages=[{"role": "system", "content": _cached_system(system)}] + conv,
@@ -140,6 +144,7 @@ def complete_json(
 async def stream(
     system: str, messages: list[dict], model: str, max_tokens: int = 4096
 ) -> AsyncIterator[str]:
+    ensure_access_token()
     resp = await litellm.acompletion(
         model=model,
         messages=[{"role": "system", "content": _cached_system(system)}] + messages,

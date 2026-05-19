@@ -12,6 +12,7 @@ dependencies = [
     "jinja2",
     "python-dotenv",
     "python-multipart",
+    "httpx",
 ]
 
 [project.optional-dependencies]

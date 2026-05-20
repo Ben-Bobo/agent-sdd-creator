@@ -202,7 +202,7 @@ async def _run_initial_analysis(session: Session) -> AsyncIterator[tuple[str, st
     """At the narrative→clarification transition: run Sonnet extraction +
     gap-analysis once, consolidate near-duplicate questions, then build the
     cursor of gaps to walk through."""
-    yield "status", "Reviewing what you told me — this may take a minute"
+    yield "status", "Reviewing what you told me — this may take a minute or two"
     chat_context = _build_chat_context(session)
     session.extracted = extract_from_text(chat_context)
     yield "status", "Figuring out what's still missing"

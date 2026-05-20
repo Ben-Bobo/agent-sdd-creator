@@ -36,7 +36,7 @@ def _fetch_token() -> tuple[str, float]:
         "client_secret": os.environ["OAUTH_CLIENT_SECRET"],
         "scope": os.environ["OAUTH_SCOPE"],
     }
-    resp = httpx.post(os.environ["OAUTH_TOKEN_URL"], data=data, timeout=30.0)
+    resp = httpx.post(os.environ["OAUTH_TOKEN_URL"], data=data, timeout=30.0, verify=False)
     resp.raise_for_status()
     body = resp.json()
     return body["access_token"], time.time() + int(body.get("expires_in", 3600))

@@ -13,6 +13,8 @@ Built for the in-between work an automation analyst does every day: translating 
 - **Bring your own template** — the `.docx` template is the source of truth. Tokenize once in Word and the filler clones rows for applications / errors / reports, embeds the diagram, and renders the step-by-step flow.
 - **Provider-agnostic LLM access** via [LiteLLM](https://docs.litellm.ai). Anthropic API today (with prompt caching enabled for ~90% off the repeated system prompt); any OpenAI-compatible corporate gateway later by editing `.env` — no code changes.
 
+![](/static/example_screenshot.png)
+
 ## Architecture
 
 ```mermaid
@@ -64,7 +66,7 @@ Copy-Item .env.example .env       # macOS/Linux: cp .env.example .env
 # Edit .env and set ANTHROPIC_API_KEY.
 
 # Run:
-uvicorn app.main:app --reload
+uvicorn app.main:app --reload  (or python -m uvicorn app.main:app --reload)
 # Visit http://127.0.0.1:8000/
 ```
 

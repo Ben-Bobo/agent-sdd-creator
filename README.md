@@ -97,27 +97,6 @@ If you have `make`, the equivalents are `make install`, `make run`. Other target
 
 The app talks to models through [LiteLLM](https://docs.litellm.ai), so any provider LiteLLM supports works — Anthropic direct, Azure, Bedrock, Ollama, or any OpenAI-compatible corporate gateway. Switch by editing `.env` only.
 
-To route through an internal gateway:
-
-```
-OPENAI_API_BASE=
-OPENAI_API_KEY=<gateway-token>
-MODEL_MAIN=openai/internal-claude-sonnet
-MODEL_CHEAP=openai/internal-claude-haiku
-```
-
-The model string's prefix (`anthropic/`, `openai/`, `bedrock/`, …) tells LiteLLM how to route. App code only references the semantic roles `MODEL_MAIN` and `MODEL_CHEAP` — see the two-model strategy section below.
-
-### Two-model strategy
-
-| Role | Default | Used for |
-|---|---|---|
-| `MODEL_MAIN` | Claude Sonnet | Extraction, gap analysis, answer validation (with lookahead), narrative enrichment, diagram generation, gap consolidation |
-| `MODEL_CHEAP` | Claude Haiku / GPT-4o Mini | Per-turn "is the user done?" classifier (4-token response); "is this gap already answered?" check |
-
-The cheap model only makes binary yes/no decisions during the chat loop. When the narrative ends, the full transcript is re-extracted with `MODEL_MAIN` before the doc is generated, so the cheap classifier never degrades output quality.
-
-Prompt caching is baked into every `MODEL_MAIN` call (Anthropic `ephemeral` cache control on the system prompt). On Anthropic this gives ~90% off the repeated system-prompt tokens. LiteLLM strips the cache marker transparently for other providers.
 
 ## Project structure
 
@@ -145,15 +124,6 @@ sessions/            generated at runtime; one folder per session, JSON state + 
 | `app/session.py` | JSON-on-disk session store — create, load, save to `sessions/<id>/state.json` |
 | `app/prompts.py` | Loads `.md` prompt files from the `prompts/` directory |
 | `app/auth.py` | OAuth2 client-credentials flow for corporate LLM gateways; refreshes bearer token before expiry |
-
-## Design decisions
-
-- **No agent framework.** Orchestration is a deterministic state machine. LLM calls are isolated, single-purpose, and parsed into Pydantic models with a validation-retry loop. Easier to debug than autonomous loops, and the failure modes are obvious.
-- **JSON files on disk for sessions, not a database.** The operator can `cat` `sessions/<id>/state.json` to see exactly what the model knows.
-- **Single-pass extraction.** The full narrative is collected first, then extracted once when the user signals done. No per-turn extraction to drift or accumulate noise.
-- **Prompts live as `.md` files under `prompts/`.** Iterate on prompts without touching code.
-- **Vanilla JS, no build step.** Python for the backend, a single static HTML/CSS/JS bundle for the frontend, SSE for streaming. Deployable as one container later.
-- **Gap consolidation before clarification.** If 4+ gaps are identified, `MODEL_MAIN` merges near-duplicates into a shorter, non-redundant list before asking the user anything. Falls back to the original list if consolidation fails.
 
 ## Built with
 

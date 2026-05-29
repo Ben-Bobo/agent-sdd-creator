@@ -2,8 +2,6 @@
 
 Turn business descriptions of a process into a developer-ready spec.
 
-Built for the in-between work an automation analyst does every day: translating business hand-waving into something a developer can actually build from.
-
 ## Features
 
 - **Two input styles:** drop in a transcript / email / paste / file upload, or run a guided chat that asks one focused question at a time.

@@ -10,3 +10,4 @@ dist/
 /Automation_SDD.docx
 /example_chat.txt
 .claude/
+uv.lock

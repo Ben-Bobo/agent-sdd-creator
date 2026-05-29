@@ -388,7 +388,7 @@ async function skipQuestion() {
 async function generate() {
   if (!state.sessionId) return;
   $("#generate-btn").disabled = true;
-  setStatus("Generating — this can take 20–40 seconds…");
+  setStatus("Generating — this can take a minute or two…");
   const progressEl = resetGenerateProgress();
   try {
     const r = await fetch(`/api/generate/${state.sessionId}`, {

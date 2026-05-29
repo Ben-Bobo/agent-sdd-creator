@@ -63,8 +63,8 @@ class Extracted(BaseModel):
     bot_utilization_pct: str
     triggers: str
     reports: list[ReportRow]
-    steps: list[Step]
-    applications_diagram_mermaid: str
+    steps: list[Step] = Field(default_factory=list)
+    applications_diagram_mermaid: str = ""
 
 
 # --- Session schema ---------------------------------------------------------

@@ -6,12 +6,12 @@ Turn business descriptions of a process into a developer-ready spec.
 
 - **Two input styles:** drop in a transcript / email / paste / file upload, or run a guided chat that asks one focused question at a time.
 - **One output:** a `.docx` filled from your template, with the Mermaid applications diagram rendered and embedded inline.
-- **Coverage-driven clarification** — after the narrative phase ends, the app scores the conversation against a developer-readiness rubric, consolidates near-duplicate questions, and asks them one at a time. The Generate button unlocks once the coverage threshold is met.
-- **Smart answer validation** — each clarification answer is validated by the main model (with a 5-gap lookahead). If the answer is unsatisfactory it asks a more pointed follow-up; after two failed attempts it marks the gap `[TBD]` and moves on.
-- **Two-model strategy** — `MODEL_MAIN` (capable) handles all structured generation; `MODEL_CHEAP` (fast) handles the per-turn "is the user done?" classifier and the "is this gap already answered?" check. Configurable per environment.
-- **Single-pass extraction** — the full chat transcript is extracted once with `MODEL_MAIN` when the narrative ends, so quality is not diluted by per-turn parsing.
-- **Bring your own template** — the `.docx` template is the source of truth. Tokenize once in Word and the filler clones rows for applications / errors / reports, embeds the diagram, and renders the step-by-step flow.
-- **Provider-agnostic LLM access** via [LiteLLM](https://docs.litellm.ai). Anthropic API today (with prompt caching enabled for ~90% off the repeated system prompt); any OpenAI-compatible corporate gateway later by editing `.env` — no code changes.
+- **Coverage-driven clarification** - after the narrative phase ends, the app scores the conversation against a developer-readiness rubric, consolidates near-duplicate questions, and asks them one at a time. The Generate button unlocks once the coverage threshold is met.
+- **Smart answer validation** - each clarification answer is validated by the main model (with a 5-gap lookahead). If the answer is unsatisfactory it asks a more pointed follow-up; after two failed attempts it marks the gap `[TBD]` and moves on.
+- **Two-model strategy** - `MODEL_MAIN` (capable) handles all structured generation; `MODEL_CHEAP` (fast) handles the per-turn "is the user done?" classifier and the "is this gap already answered?" check. Configurable per environment.
+- **Single-pass extraction** - the full chat transcript is extracted once with `MODEL_MAIN` when the narrative ends, so quality is not diluted by per-turn parsing.
+- **Bring your own template** - the `.docx` template is the source of truth. Tokenize once in Word and the filler clones rows for applications / errors / reports, embeds the diagram, and renders the step-by-step flow.
+- **Provider-agnostic LLM access** via [LiteLLM](https://docs.litellm.ai). Anthropic API today (with prompt caching enabled for ~90% off the repeated system prompt); any OpenAI-compatible corporate gateway later by editing `.env` - no code changes.
 
 ![](/static/example_screenshot.png)
 
@@ -95,14 +95,14 @@ If you have `make`, the equivalents are `make install`, `make run`. Other target
 
 ## Using a different LLM backend
 
-The app talks to models through [LiteLLM](https://docs.litellm.ai), so any provider LiteLLM supports works — Anthropic direct, Azure, Bedrock, Ollama, or any OpenAI-compatible corporate gateway. Switch by editing `.env` only.
+The app talks to models through [LiteLLM](https://docs.litellm.ai), so any provider LiteLLM supports works - Anthropic direct, Azure, Bedrock, Ollama, or any OpenAI-compatible corporate gateway. Switch by editing `.env` only.
 
 
 ## Project structure
 
 ```
 app/                 FastAPI app + orchestration modules
-prompts/             All LLM prompts as .md files — iterate without touching code
+prompts/             All LLM prompts as .md files - iterate without touching code
 templates/           Word template + Jinja templates for the UI
 static/              CSS + vanilla JS for the single-page UI
 sessions/            generated at runtime; one folder per session, JSON state + artifacts
@@ -112,7 +112,7 @@ sessions/            generated at runtime; one folder per session, JSON state + 
 
 | File | Purpose |
 |---|---|
-| `app/main.py` | FastAPI routes — the HTTP entry point for all operations |
+| `app/main.py` | FastAPI routes - the HTTP entry point for all operations |
 | `app/chat.py` | Chat state machine + `handle_turn()` streaming; manages the 5 phases and clarification cursor |
 | `app/extraction.py` | Raw text → structured `Extracted` Pydantic object via `MODEL_MAIN` |
 | `app/gap_analysis.py` | `Extracted` → `Coverage` (rubric-scored, with clarifying questions per gap) |
@@ -121,10 +121,10 @@ sessions/            generated at runtime; one folder per session, JSON state + 
 | `app/docx_filler.py` | Token replacement in the `.docx` template; clones repeating rows; embeds diagram PNG; renders step-by-step flow |
 | `app/llm.py` | Thin LiteLLM wrapper with Anthropic prompt caching; exposes `complete()`, `complete_json()`, `stream()` |
 | `app/models.py` | Pydantic schemas: `Session`, `Extracted`, `Coverage`, `ChatMessage`, `Intake`, etc. |
-| `app/session.py` | JSON-on-disk session store — create, load, save to `sessions/<id>/state.json` |
+| `app/session.py` | JSON-on-disk session store - create, load, save to `sessions/<id>/state.json` |
 | `app/prompts.py` | Loads `.md` prompt files from the `prompts/` directory |
 | `app/auth.py` | OAuth2 client-credentials flow for corporate LLM gateways; refreshes bearer token before expiry |
 
 ## Built with
 
-[FastAPI](https://fastapi.tiangolo.com/) · [LiteLLM](https://docs.litellm.ai) · [Pydantic](https://docs.pydantic.dev) · [python-docx](https://python-docx.readthedocs.io) · [Mermaid CLI](https://github.com/mermaid-js/mermaid-cli). UI is plain HTML + CSS + vanilla JS with SSE — no framework, no build step.
+[FastAPI](https://fastapi.tiangolo.com/) · [LiteLLM](https://docs.litellm.ai) · [Pydantic](https://docs.pydantic.dev) · [python-docx](https://python-docx.readthedocs.io) · [Mermaid CLI](https://github.com/mermaid-js/mermaid-cli). UI is plain HTML + CSS + vanilla JS with SSE - no framework, no build step.
